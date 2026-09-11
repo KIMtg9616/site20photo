@@ -6,7 +6,8 @@
    현재 기능
    1. 카메라 실행
    2. 정적 배경 선택
-   3. 사진 촬영
+   3. 정적 캐릭터 선택 및 합성
+   4. 사진 촬영
    4. PNG 저장
    5. 다시 찍기
    6. 전면 ↔ 후면 카메라 전환
@@ -57,6 +58,13 @@ const cameraMessage =
 const backgroundOverlay =
   document.getElementById(
     "backgroundOverlay"
+  );
+
+
+/* 선택한 정적 캐릭터 */
+const characterOverlay =
+  document.getElementById(
+    "characterOverlay"
   );
 
 
@@ -149,7 +157,8 @@ const backgroundManager =
   new BackgroundManager(
     backgroundList,
     backgroundOverlay,
-    selectorTitle
+    selectorTitle,
+    characterOverlay
   );
 
 
@@ -798,11 +807,20 @@ captureButton.addEventListener(
           .getSelectedBackground();
 
 
+      /*
+        2차 정적 캐릭터 선택값도 함께 가져옵니다.
+      */
+      const selectedCharacter =
+        backgroundManager
+          .getSelectedCharacter();
+
+
       const photoBlob =
         await capturePhoto(
           videoElement,
           captureCanvas,
-          selectedBackground
+          selectedBackground,
+          selectedCharacter
         );
 
 

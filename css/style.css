@@ -210,6 +210,114 @@ body {
 
 
 /* =========================================================
+   움직이는 배경 레이어
+   ========================================================= */
+
+.animated-background-overlay {
+  position: absolute;
+
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+  object-position: center;
+
+  pointer-events: none;
+
+  z-index: 1;
+
+  display: none;
+
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+
+/* =========================================================
+   움직이는 캐릭터 레이어
+   ========================================================= */
+
+.animated-character-overlay {
+  position: absolute;
+
+  right: var(--animated-character-right, 3%);
+  bottom: var(--animated-character-bottom, 2%);
+
+  width: var(--animated-character-width, 36%);
+  height: auto;
+
+  max-width: 58%;
+  max-height: 76%;
+
+  object-fit: contain;
+  object-position: right bottom;
+
+  pointer-events: none;
+
+  z-index: 2;
+
+  display: none;
+
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+
+/* =========================================================
+   캐릭터 전용 좌측 상단 타이틀
+
+   정적 캐릭터와 움직이는 캐릭터에서만 표시합니다.
+   배경 / 움직이는 배경 / AR에서는 숨깁니다.
+   ========================================================= */
+
+.character-title-overlay {
+  position: absolute;
+
+  left: var(--character-title-left, 2%);
+  top: var(--character-title-top, 2%);
+
+  width: var(--character-title-width, 34%);
+  height: auto;
+
+  max-width: 46%;
+
+  object-fit: contain;
+  object-position: left top;
+
+  pointer-events: none;
+
+  z-index: 3;
+
+  display: none;
+
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+
+/* =========================================================
+   얼굴인식 AR Canvas
+   ========================================================= */
+
+.ar-overlay-canvas {
+  position: absolute;
+
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  pointer-events: none;
+
+  z-index: 4;
+
+  display: none;
+}
+
+
+/* =========================================================
    카메라 안내
    ========================================================= */
 

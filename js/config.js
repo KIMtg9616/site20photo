@@ -153,19 +153,83 @@ export const CONFIG = {
    ----------------------------------------------------------
    2차: 정적 캐릭터
 
-   현재는 자료가 없으므로 빈 배열입니다.
+   캐릭터 원본:
+   - 800×800 PNG
+   - 투명 배경
 
-   나중에 아래 형식으로 추가하면 선택창에 자동 표시됩니다.
+   캐릭터 썸네일:
+   - 320×240 WebP
 
-   {
-     id: "character-01",
-     name: "캐릭터 이름",
-     src: "./assets/characters/static/character-01.png",
-     thumbnail: "./assets/characters/thumbnails/thumb-character-01.webp"
-   }
+   placement:
+   - widthRatio: 최종 사진 폭에서 캐릭터가 차지하는 비율
+   - rightRatio: 오른쪽 여백 비율
+   - bottomRatio: 아래쪽 여백 비율
+
+   현재 캐릭터는 모두 사진 오른쪽 아래에 표시합니다.
+   ----------------------------------------------------------
   */
 
-  characters: [],
+  characters: [
+
+    {
+      id: "none",
+      name: "캐릭터 없음",
+      src: null,
+      thumbnail: null
+    },
+
+    {
+      id: "einstein",
+      name: "아인슈타인",
+
+      src:
+        "./assets/characters/static/Einstein.png",
+
+      thumbnail:
+        "./assets/characters/thumbnails/thumb-einstein.webp",
+
+      placement: {
+        widthRatio: 0.40,
+        rightRatio: 0.02,
+        bottomRatio: 0.00
+      }
+    },
+
+    {
+      id: "galilei",
+      name: "갈릴레이",
+
+      src:
+        "./assets/characters/static/Galilei.png",
+
+      thumbnail:
+        "./assets/characters/thumbnails/thumb-galilei.webp",
+
+      placement: {
+        widthRatio: 0.40,
+        rightRatio: 0.02,
+        bottomRatio: 0.00
+      }
+    },
+
+    {
+      id: "newton",
+      name: "뉴턴",
+
+      src:
+        "./assets/characters/static/Newton.png",
+
+      thumbnail:
+        "./assets/characters/thumbnails/thumb-newton.webp",
+
+      placement: {
+        widthRatio: 0.40,
+        rightRatio: 0.02,
+        bottomRatio: 0.00
+      }
+    }
+
+  ],
 
 
   /*

@@ -1,0 +1,38 @@
+[2026-09-12 업데이트]
+
+1. 움직이는 배경
+- electric.webp : 전자기유도
+- grassmove.webp : 풀 배경
+- spacemove.webp : 우주배경
+
+2. 움직이는 캐릭터
+- applemove.webp : 뉴턴의 사과
+- catmove.webp : 고양이
+
+3. AR 효과
+- crown.png : 왕관
+- glasses1.png : 안경1
+- glasses2.png : 안경2
+- head1.png : 머리띠1
+- head2.png : 머리띠2
+
+4. 썸네일
+- 모든 신규 썸네일은 320x240 WebP
+- assets/animated/thumbnails/
+- assets/ar/thumbnails/
+
+5. title.png 표시 규칙
+- 정적 캐릭터: 표시
+- 움직이는 캐릭터: 표시
+- 정적 배경: 표시 안 함
+- 움직이는 배경: 표시 안 함
+- AR: 표시 안 함
+
+6. 모드 독립성
+- 배경 / 캐릭터 / 움직임 / AR은 동시에 적용되지 않음
+- 다른 모드의 실제 항목을 선택하면 기존 효과는 해제됨
+- 각 모드의 '없음'을 선택하면 해당 효과가 제거됨
+
+7. AR
+- AR을 실제 선택할 때만 MediaPipe Face Landmarker 관련 파일을 지연 로딩함
+- 왕관/안경/머리띠는 얼굴 랜드마크를 기준으로 위치와 회전을 갱신함

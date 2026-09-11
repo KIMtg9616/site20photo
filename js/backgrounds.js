@@ -6,8 +6,7 @@ import { CONFIG } from "./config.js";
  선택창 관리
  ============================================================
 
- 파일 이름은 기존 구조를 유지하기 위해 backgrounds.js를
- 그대로 사용합니다.
+ 파일명은 기존 구조를 유지하기 위해 backgrounds.js를 사용합니다.
 
  현재 실제 적용 기능:
  1. 정적 배경
@@ -16,6 +15,10 @@ import { CONFIG } from "./config.js";
  이후 확장 예정:
  3. 움직이는 배경 및 캐릭터
  4. AR
+
+ 중요:
+ 배경 / 캐릭터 / 움직임 / AR은 서로 독립적인 단일 선택 모드입니다.
+ 한 모드에서 실제 항목을 선택하면 다른 모드의 적용은 즉시 해제됩니다.
 */
 
 export class BackgroundManager {
@@ -41,7 +44,7 @@ export class BackgroundManager {
 
 
     /*
-      현재 선택 모드는 첫 번째 모드인 배경
+      현재 보고 있는 선택 모드
     */
     this.currentModeId =
       CONFIG.selectionModes[0]?.id ||
@@ -49,22 +52,37 @@ export class BackgroundManager {
 
 
     /*
-      모드별 선택값을 각각 기억합니다.
+      실제로 카메라에 적용 중인 모드입니다.
+
+      null      = 아무 효과도 적용하지 않음
+      background = 배경만 적용
+      character  = 캐릭터만 적용
+      motion     = 움직임만 적용(향후)
+      ar         = AR만 적용(향후)
+    */
+    this.activeModeId =
+      null;
+
+
+    /*
+      모든 모드는 기본적으로 '없음' 항목을 선택합니다.
     */
     this.selectedItems = {
 
       background:
-        CONFIG.backgrounds[0] ||
+        this.getNoneItem("background") ||
         null,
 
       character:
-        CONFIG.characters[0] ||
+        this.getNoneItem("character") ||
         null,
 
       motion:
+        this.getNoneItem("motion") ||
         null,
 
       ar:
+        this.getNoneItem("ar") ||
         null
 
     };
@@ -85,6 +103,12 @@ export class BackgroundManager {
   /*
  ============================================================
  현재 모드 설정
+ ============================================================
+
+ 모드 버튼을 눌러 선택창을 바꾸는 것만으로는
+ 기존 효과를 제거하지 않습니다.
+
+ 실제 다른 항목을 선택하는 순간 이전 효과가 해제됩니다.
  ============================================================
  */
 
@@ -112,7 +136,7 @@ export class BackgroundManager {
 
   /*
  ============================================================
- 현재 모드 정보
+ 모드 정보 가져오기
  ============================================================
  */
 
@@ -133,14 +157,14 @@ export class BackgroundManager {
 
   /*
  ============================================================
- 현재 모드의 항목 배열
+ 특정 모드의 항목 배열
  ============================================================
  */
 
-  getCurrentItems() {
+  getItemsForMode(modeId) {
 
     const mode =
-      this.getModeConfig();
+      this.getModeConfig(modeId);
 
 
     if (!mode) {
@@ -157,6 +181,43 @@ export class BackgroundManager {
     return Array.isArray(items)
       ? items
       : [];
+
+  }
+
+
+  /*
+ ============================================================
+ 현재 모드의 항목 배열
+ ============================================================
+ */
+
+  getCurrentItems() {
+
+    return this.getItemsForMode(
+      this.currentModeId
+    );
+
+  }
+
+
+  /*
+ ============================================================
+ 각 모드의 '없음' 항목 찾기
+ ============================================================
+ */
+
+  getNoneItem(modeId) {
+
+    const items =
+      this.getItemsForMode(modeId);
+
+
+    return (
+      items.find(
+        item => item.id === "none"
+      ) ||
+      null
+    );
 
   }
 
@@ -301,7 +362,7 @@ export class BackgroundManager {
 
         /*
          --------------------------------------------------------
-         작은 썸네일만 로딩
+         저해상도 썸네일
          --------------------------------------------------------
         */
 
@@ -424,6 +485,21 @@ export class BackgroundManager {
  ============================================================
  항목 선택
  ============================================================
+
+ 핵심 동작:
+
+ 배경 A 적용
+ → 캐릭터 아인슈타인 선택
+ → 배경 A 자동 해제
+ → 아인슈타인만 표시
+
+ 캐릭터 적용
+ → 배경 B 선택
+ → 캐릭터 자동 해제
+ → 배경 B만 표시
+
+ '없음'을 선택하면 현재 적용 중인 모든 효과가 제거됩니다.
+ ============================================================
  */
 
   select(
@@ -431,12 +507,28 @@ export class BackgroundManager {
     selectedButton
   ) {
 
+    const selectedModeId =
+      this.currentModeId;
+
+
+    /*
+      다른 모드의 선택 상태 및 화면 효과를 모두 먼저 제거합니다.
+    */
+    this.clearAllSelectionsAndEffects();
+
+
+    /*
+      현재 모드에서 선택한 항목을 저장합니다.
+    */
     this.selectedItems[
-      this.currentModeId
+      selectedModeId
     ] =
       item;
 
 
+    /*
+      현재 선택창의 버튼 표시를 갱신합니다.
+    */
     const buttons =
       this.listElement.querySelectorAll(
         ".background-item"
@@ -471,9 +563,41 @@ export class BackgroundManager {
     );
 
 
+    /*
+      '없음'을 선택한 경우
+      아무 모드도 활성화하지 않습니다.
+    */
+    if (
+      !item ||
+      item.id === "none" ||
+      !item.src
+    ) {
+
+      this.activeModeId =
+        null;
+
+
+      this.showNoneToast(
+        selectedModeId
+      );
+
+
+      return;
+
+    }
+
+
+    /*
+      실제 항목을 선택한 경우에는
+      해당 모드만 활성화합니다.
+    */
+    this.activeModeId =
+      selectedModeId;
+
+
     /* 정적 배경 */
     if (
-      this.currentModeId ===
+      selectedModeId ===
       "background"
     ) {
 
@@ -488,7 +612,7 @@ export class BackgroundManager {
 
     /* 정적 캐릭터 */
     if (
-      this.currentModeId ===
+      selectedModeId ===
       "character"
     ) {
 
@@ -502,11 +626,108 @@ export class BackgroundManager {
 
 
     /*
-      움직임 / AR은 다음 단계에서 실제 레이어를 연결합니다.
+      움직임 / AR은 다음 단계에서 실제 렌더링 기능을 연결합니다.
+      지금도 다른 모드 효과는 이미 완전히 해제된 상태입니다.
     */
     this.showToast(
       `${item.name} 선택됨`
     );
+
+  }
+
+
+  /*
+ ============================================================
+ 모든 모드 선택 상태와 현재 화면 효과 제거
+ ============================================================
+ */
+
+  clearAllSelectionsAndEffects() {
+
+    /*
+      각 모드의 선택값을 다시 '없음'으로 돌립니다.
+    */
+    CONFIG.selectionModes.forEach(
+      mode => {
+
+        this.selectedItems[
+          mode.id
+        ] =
+          this.getNoneItem(
+            mode.id
+          ) ||
+          null;
+
+      }
+    );
+
+
+    this.activeModeId =
+      null;
+
+
+    this.clearBackgroundOverlay();
+
+
+    this.clearCharacterOverlay();
+
+
+    /*
+      향후 움직임/AR 레이어를 구현하면
+      이 메서드 안에서 함께 제거하면 됩니다.
+    */
+
+  }
+
+
+  /*
+ ============================================================
+ 배경 레이어 제거
+ ============================================================
+ */
+
+  clearBackgroundOverlay() {
+
+    if (!this.overlayElement) {
+
+      return;
+
+    }
+
+
+    this.overlayElement.removeAttribute(
+      "src"
+    );
+
+
+    this.overlayElement.style.display =
+      "none";
+
+  }
+
+
+  /*
+ ============================================================
+ 캐릭터 레이어 제거
+ ============================================================
+ */
+
+  clearCharacterOverlay() {
+
+    if (!this.characterOverlayElement) {
+
+      return;
+
+    }
+
+
+    this.characterOverlayElement.removeAttribute(
+      "src"
+    );
+
+
+    this.characterOverlayElement.style.display =
+      "none";
 
   }
 
@@ -519,15 +740,16 @@ export class BackgroundManager {
 
   applyBackground(background) {
 
-    if (!background.src) {
+    if (
+      !background ||
+      !background.src
+    ) {
 
-      this.overlayElement.removeAttribute(
-        "src"
-      );
+      this.clearBackgroundOverlay();
 
 
-      this.overlayElement.style.display =
-        "none";
+      this.activeModeId =
+        null;
 
 
       this.showToast(
@@ -559,10 +781,6 @@ export class BackgroundManager {
  ============================================================
  정적 캐릭터 적용
  ============================================================
-
- 기본 크기는 최종 사진 폭의 40%이며
- 오른쪽 아래에 표시됩니다.
- ============================================================
  */
 
   applyCharacter(character) {
@@ -574,15 +792,16 @@ export class BackgroundManager {
     }
 
 
-    if (!character.src) {
+    if (
+      !character ||
+      !character.src
+    ) {
 
-      this.characterOverlayElement.removeAttribute(
-        "src"
-      );
+      this.clearCharacterOverlay();
 
 
-      this.characterOverlayElement.style.display =
-        "none";
+      this.activeModeId =
+        null;
 
 
       this.showToast(
@@ -642,6 +861,39 @@ export class BackgroundManager {
 
     this.showToast(
       `${character.name} 캐릭터를 선택했습니다.`
+    );
+
+  }
+
+
+  /*
+ ============================================================
+ '없음' 선택 알림
+ ============================================================
+ */
+
+  showNoneToast(modeId) {
+
+    const messages = {
+
+      background:
+        "배경을 사용하지 않습니다.",
+
+      character:
+        "캐릭터를 사용하지 않습니다.",
+
+      motion:
+        "움직임을 사용하지 않습니다.",
+
+      ar:
+        "AR 효과를 사용하지 않습니다."
+
+    };
+
+
+    this.showToast(
+      messages[modeId] ||
+      "효과를 사용하지 않습니다."
     );
 
   }
@@ -713,32 +965,79 @@ export class BackgroundManager {
 
   /*
  ============================================================
- 현재 선택된 정적 배경
+ 현재 실제로 적용 중인 정적 배경
  ============================================================
  */
 
   getSelectedBackground() {
 
+    if (
+      this.activeModeId !==
+      "background"
+    ) {
+
+      return null;
+
+    }
+
+
+    const background =
+      this.selectedItems.background;
+
+
     return (
-      this.selectedItems.background ||
-      null
-    );
+      background &&
+      background.id !== "none" &&
+      background.src
+    )
+      ? background
+      : null;
 
   }
 
 
   /*
  ============================================================
- 현재 선택된 정적 캐릭터
+ 현재 실제로 적용 중인 정적 캐릭터
  ============================================================
  */
 
   getSelectedCharacter() {
 
+    if (
+      this.activeModeId !==
+      "character"
+    ) {
+
+      return null;
+
+    }
+
+
+    const character =
+      this.selectedItems.character;
+
+
     return (
-      this.selectedItems.character ||
-      null
-    );
+      character &&
+      character.id !== "none" &&
+      character.src
+    )
+      ? character
+      : null;
+
+  }
+
+
+  /*
+ ============================================================
+ 현재 활성 모드
+ ============================================================
+ */
+
+  getActiveModeId() {
+
+    return this.activeModeId;
 
   }
 

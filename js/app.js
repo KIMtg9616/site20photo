@@ -35,6 +35,11 @@ import {
 
 
 import {
+  ARTracker
+} from "./ar.js";
+
+
+import {
   capturePhoto,
   downloadPhoto
 } from "./capture.js";
@@ -43,6 +48,12 @@ import {
 /* ============================================================
    HTML 요소
    ============================================================ */
+
+const cameraStage =
+  document.getElementById(
+    "cameraStage"
+  );
+
 
 const videoElement =
   document.getElementById(
@@ -66,6 +77,30 @@ const backgroundOverlay =
 const characterOverlay =
   document.getElementById(
     "characterOverlay"
+  );
+
+
+const animatedBackgroundOverlay =
+  document.getElementById(
+    "animatedBackgroundOverlay"
+  );
+
+
+const animatedCharacterOverlay =
+  document.getElementById(
+    "animatedCharacterOverlay"
+  );
+
+
+const characterTitleOverlay =
+  document.getElementById(
+    "characterTitleOverlay"
+  );
+
+
+const arOverlayCanvas =
+  document.getElementById(
+    "arOverlayCanvas"
   );
 
 
@@ -154,12 +189,24 @@ const downloadButton =
    선택 관리자
    ============================================================ */
 
+const arTracker =
+  new ARTracker(
+    videoElement,
+    cameraStage,
+    arOverlayCanvas
+  );
+
+
 const backgroundManager =
   new BackgroundManager(
     backgroundList,
     backgroundOverlay,
     selectorTitle,
-    characterOverlay
+    characterOverlay,
+    animatedBackgroundOverlay,
+    animatedCharacterOverlay,
+    characterTitleOverlay,
+    arTracker
   );
 
 
@@ -800,29 +847,29 @@ captureButton.addEventListener(
 
 
       /*
-        현재 활성 모드가 배경일 때만 정적 배경이 반환됩니다.
-        캐릭터 등 다른 모드가 활성화되어 있으면 null입니다.
+        현재 화면에 표시 중인 레이어를 그대로 PNG에 합성합니다.
+        네 모드는 상호 배타적이므로 실제 활성 효과 하나만 반영됩니다.
       */
-      const selectedBackground =
-        backgroundManager
-          .getSelectedBackground();
-
-
-      /*
-        현재 활성 모드가 캐릭터일 때만 캐릭터가 반환됩니다.
-        배경 등 다른 모드가 활성화되어 있으면 null입니다.
-      */
-      const selectedCharacter =
-        backgroundManager
-          .getSelectedCharacter();
-
-
       const photoBlob =
         await capturePhoto(
           videoElement,
           captureCanvas,
-          selectedBackground,
-          selectedCharacter
+          {
+            cameraStageElement:
+              cameraStage,
+            backgroundOverlayElement:
+              backgroundOverlay,
+            characterOverlayElement:
+              characterOverlay,
+            animatedBackgroundOverlayElement:
+              animatedBackgroundOverlay,
+            animatedCharacterOverlayElement:
+              animatedCharacterOverlay,
+            characterTitleOverlayElement:
+              characterTitleOverlay,
+            arOverlayCanvasElement:
+              arOverlayCanvas
+          }
         );
 
 

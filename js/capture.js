@@ -142,7 +142,8 @@ function calculateCrop(
 export async function capturePhoto(
   videoElement,
   canvasElement,
-  selectedBackground
+  selectedBackground,
+  selectedCharacter = null
 ) {
 
   const outputWidth =
@@ -263,6 +264,81 @@ export async function capturePhoto(
 
 
   context.restore();
+
+
+  /*
+   ----------------------------------------------------------
+   선택한 정적 캐릭터 합성
+   ----------------------------------------------------------
+
+   미리보기와 동일하게 기본적으로 사진 오른쪽 아래에 배치합니다.
+   캐릭터는 배경 프레임보다 먼저 그려서
+   프레임 장식이 캐릭터의 가장자리 위에 자연스럽게 올라오게 합니다.
+  */
+
+  if (
+    selectedCharacter &&
+    selectedCharacter.src
+  ) {
+
+    const characterImage =
+      await loadImage(
+        selectedCharacter.src
+      );
+
+
+    const placement =
+      selectedCharacter.placement || {};
+
+
+    const widthRatio =
+      placement.widthRatio ??
+      0.40;
+
+
+    const rightRatio =
+      placement.rightRatio ??
+      0.02;
+
+
+    const bottomRatio =
+      placement.bottomRatio ??
+      0;
+
+
+    const characterWidth =
+      outputWidth * widthRatio;
+
+
+    const characterHeight =
+      characterWidth *
+      (
+        characterImage.naturalHeight /
+        characterImage.naturalWidth
+      );
+
+
+    const characterX =
+      outputWidth -
+      characterWidth -
+      (outputWidth * rightRatio);
+
+
+    const characterY =
+      outputHeight -
+      characterHeight -
+      (outputHeight * bottomRatio);
+
+
+    context.drawImage(
+      characterImage,
+      characterX,
+      characterY,
+      characterWidth,
+      characterHeight
+    );
+
+  }
 
 
   /*

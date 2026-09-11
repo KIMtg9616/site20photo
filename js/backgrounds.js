@@ -7,14 +7,15 @@ import { CONFIG } from "./config.js";
  ============================================================
 
  파일 이름은 기존 구조를 유지하기 위해 backgrounds.js를
- 그대로 사용하지만, 이제 다음 네 모드를 모두 관리합니다.
+ 그대로 사용합니다.
 
- 1. 배경
- 2. 캐릭터
+ 현재 실제 적용 기능:
+ 1. 정적 배경
+ 2. 정적 캐릭터
+
+ 이후 확장 예정:
  3. 움직이는 배경 및 캐릭터
  4. AR
-
- 현재 실제 카메라 합성은 기존 1차 기능인 '배경'만 수행합니다.
 */
 
 export class BackgroundManager {
@@ -22,7 +23,8 @@ export class BackgroundManager {
   constructor(
     listElement,
     overlayElement,
-    titleElement = null
+    titleElement = null,
+    characterOverlayElement = null
   ) {
 
     this.listElement =
@@ -34,6 +36,9 @@ export class BackgroundManager {
     this.titleElement =
       titleElement;
 
+    this.characterOverlayElement =
+      characterOverlayElement;
+
 
     /*
       현재 선택 모드는 첫 번째 모드인 배경
@@ -44,10 +49,7 @@ export class BackgroundManager {
 
 
     /*
-      모드별 선택 항목을 각각 기억합니다.
-
-      다른 모드로 갔다가 다시 배경으로 돌아와도
-      기존에 선택했던 배경이 유지됩니다.
+      모드별 선택값을 각각 기억합니다.
     */
     this.selectedItems = {
 
@@ -56,6 +58,7 @@ export class BackgroundManager {
         null,
 
       character:
+        CONFIG.characters[0] ||
         null,
 
       motion:
@@ -67,9 +70,6 @@ export class BackgroundManager {
     };
 
 
-    /*
-      하단 선택 알림
-    */
     this.toastElement =
       document.getElementById(
         "backgroundToast"
@@ -133,7 +133,7 @@ export class BackgroundManager {
 
   /*
  ============================================================
- 현재 모드의 항목 배열 가져오기
+ 현재 모드의 항목 배열
  ============================================================
  */
 
@@ -180,15 +180,6 @@ export class BackgroundManager {
     }
 
 
-    /*
-      제목 변경
-
-      예:
-      배경을 선택해 주세요
-      캐릭터를 선택해 주세요
-      움직이는 배경 및 캐릭터를 선택해 주세요
-      AR 효과를 선택해 주세요
-    */
     if (this.titleElement) {
 
       this.titleElement.textContent =
@@ -197,9 +188,6 @@ export class BackgroundManager {
     }
 
 
-    /*
-      스크린리더용 선택창 이름도 변경
-    */
     this.listElement.setAttribute(
       "aria-label",
       mode.ariaLabel
@@ -214,10 +202,6 @@ export class BackgroundManager {
       this.getCurrentItems();
 
 
-    /*
-      아직 자료가 등록되지 않은 모드는
-      빈 선택창 대신 안내 메시지를 표시합니다.
-    */
     if (items.length === 0) {
 
       this.renderEmptyState(
@@ -288,7 +272,7 @@ export class BackgroundManager {
 
         /*
          --------------------------------------------------------
-         '없음' 항목
+         없음 항목
          --------------------------------------------------------
         */
 
@@ -317,10 +301,7 @@ export class BackgroundManager {
 
         /*
          --------------------------------------------------------
-         썸네일 이미지
-
-         실제 고해상도 원본 src가 아니라
-         작은 thumbnail만 불러옵니다.
+         작은 썸네일만 로딩
          --------------------------------------------------------
         */
 
@@ -371,6 +352,7 @@ export class BackgroundManager {
               image.style.display =
                 "none";
 
+
               button.classList.add(
                 "image-load-error"
               );
@@ -411,7 +393,7 @@ export class BackgroundManager {
 
   /*
  ============================================================
- 자료가 없는 모드의 안내
+ 자료가 없는 모드 안내
  ============================================================
  */
 
@@ -449,18 +431,12 @@ export class BackgroundManager {
     selectedButton
   ) {
 
-    /*
-      현재 모드의 선택 상태 저장
-    */
     this.selectedItems[
       this.currentModeId
     ] =
       item;
 
 
-    /*
-      현재 선택창의 버튼 표시 초기화
-    */
     const buttons =
       this.listElement.querySelectorAll(
         ".background-item"
@@ -495,15 +471,7 @@ export class BackgroundManager {
     );
 
 
-    /*
-     ============================================================
-     현재 1차 실제 기능: 정적 배경
-     ============================================================
-
-     캐릭터 / 움직임 / AR은 선택창 구조만 준비되어 있고
-     실제 레이어 합성은 각각의 개발 단계에서 연결합니다.
-    */
-
+    /* 정적 배경 */
     if (
       this.currentModeId ===
       "background"
@@ -518,8 +486,23 @@ export class BackgroundManager {
     }
 
 
+    /* 정적 캐릭터 */
+    if (
+      this.currentModeId ===
+      "character"
+    ) {
+
+      this.applyCharacter(
+        item
+      );
+
+      return;
+
+    }
+
+
     /*
-      향후 기능 자료가 등록되었을 때의 공통 선택 알림
+      움직임 / AR은 다음 단계에서 실제 레이어를 연결합니다.
     */
     this.showToast(
       `${item.name} 선택됨`
@@ -536,9 +519,6 @@ export class BackgroundManager {
 
   applyBackground(background) {
 
-    /*
-      배경 없음
-    */
     if (!background.src) {
 
       this.overlayElement.removeAttribute(
@@ -560,9 +540,6 @@ export class BackgroundManager {
     }
 
 
-    /*
-      고해상도 원본은 실제로 선택했을 때만 로딩됩니다.
-    */
     this.overlayElement.src =
       background.src;
 
@@ -573,6 +550,98 @@ export class BackgroundManager {
 
     this.showToast(
       `${background.name} 배경을 선택했습니다.`
+    );
+
+  }
+
+
+  /*
+ ============================================================
+ 정적 캐릭터 적용
+ ============================================================
+
+ 기본 크기는 최종 사진 폭의 40%이며
+ 오른쪽 아래에 표시됩니다.
+ ============================================================
+ */
+
+  applyCharacter(character) {
+
+    if (!this.characterOverlayElement) {
+
+      return;
+
+    }
+
+
+    if (!character.src) {
+
+      this.characterOverlayElement.removeAttribute(
+        "src"
+      );
+
+
+      this.characterOverlayElement.style.display =
+        "none";
+
+
+      this.showToast(
+        "캐릭터를 사용하지 않습니다."
+      );
+
+
+      return;
+
+    }
+
+
+    const placement =
+      character.placement || {};
+
+
+    const widthRatio =
+      placement.widthRatio ??
+      0.40;
+
+
+    const rightRatio =
+      placement.rightRatio ??
+      0.02;
+
+
+    const bottomRatio =
+      placement.bottomRatio ??
+      0;
+
+
+    this.characterOverlayElement.style.setProperty(
+      "--character-width",
+      `${widthRatio * 100}%`
+    );
+
+
+    this.characterOverlayElement.style.setProperty(
+      "--character-right",
+      `${rightRatio * 100}%`
+    );
+
+
+    this.characterOverlayElement.style.setProperty(
+      "--character-bottom",
+      `${bottomRatio * 100}%`
+    );
+
+
+    this.characterOverlayElement.src =
+      character.src;
+
+
+    this.characterOverlayElement.style.display =
+      "block";
+
+
+    this.showToast(
+      `${character.name} 캐릭터를 선택했습니다.`
     );
 
   }
@@ -615,9 +684,6 @@ export class BackgroundManager {
       message;
 
 
-    /*
-      같은 애니메이션을 연속 실행하기 위한 reflow
-    */
     void this.toastElement.offsetWidth;
 
 
@@ -647,7 +713,7 @@ export class BackgroundManager {
 
   /*
  ============================================================
- 현재 선택된 배경
+ 현재 선택된 정적 배경
  ============================================================
  */
 
@@ -663,7 +729,23 @@ export class BackgroundManager {
 
   /*
  ============================================================
- 향후 확장용: 모든 모드 선택값 반환
+ 현재 선택된 정적 캐릭터
+ ============================================================
+ */
+
+  getSelectedCharacter() {
+
+    return (
+      this.selectedItems.character ||
+      null
+    );
+
+  }
+
+
+  /*
+ ============================================================
+ 모든 모드 선택값
  ============================================================
  */
 

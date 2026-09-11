@@ -3,75 +3,6 @@ import { CONFIG } from "./config.js";
 
 /*
  ============================================================
- 이미지 캐시
- ============================================================
-
- 같은 배경을 반복 촬영할 때 매번 다시 로딩하지 않도록
- 브라우저 메모리에 저장합니다.
-*/
-
-const imageCache = new Map();
-
-
-/*
- 이미지 로딩
-*/
-async function loadImage(src) {
-
-  if (!src) {
-    return null;
-  }
-
-
-  if (imageCache.has(src)) {
-
-    return imageCache.get(src);
-
-  }
-
-
-  const image =
-    new Image();
-
-
-  image.src =
-    src;
-
-
-  /*
-   decode() 지원 브라우저에서는
-   이미지 디코딩이 끝날 때까지 기다립니다.
-  */
-  if (image.decode) {
-
-    await image.decode();
-
-  }
-
-  else {
-
-    await new Promise(
-      (resolve, reject) => {
-
-        image.onload = resolve;
-        image.onerror = reject;
-
-      }
-    );
-
-  }
-
-
-  imageCache.set(src, image);
-
-
-  return image;
-
-}
-
-
-/*
- ============================================================
  원본 카메라 영상을 4:3으로 중앙 크롭하기 위한 계산
  ============================================================
 */
@@ -85,43 +16,45 @@ function calculateCrop(
   const sourceAspectRatio =
     sourceWidth / sourceHeight;
 
-
   let sx = 0;
   let sy = 0;
 
   let sw = sourceWidth;
   let sh = sourceHeight;
 
-
-  /*
-   원본이 목표보다 가로로 넓은 경우
-   좌우를 잘라냅니다.
-  */
-  if (sourceAspectRatio > targetAspectRatio) {
+  if (
+    sourceAspectRatio >
+    targetAspectRatio
+  ) {
 
     sw =
-      sourceHeight * targetAspectRatio;
+      sourceHeight *
+      targetAspectRatio;
 
     sx =
-      (sourceWidth - sw) / 2;
+      (
+        sourceWidth -
+        sw
+      ) / 2;
 
   }
 
-
-  /*
-   원본이 목표보다 세로로 긴 경우
-   위아래를 잘라냅니다.
-  */
-  else if (sourceAspectRatio < targetAspectRatio) {
+  else if (
+    sourceAspectRatio <
+    targetAspectRatio
+  ) {
 
     sh =
-      sourceWidth / targetAspectRatio;
+      sourceWidth /
+      targetAspectRatio;
 
     sy =
-      (sourceHeight - sh) / 2;
+      (
+        sourceHeight -
+        sh
+      ) / 2;
 
   }
-
 
   return {
     sx,
@@ -133,17 +66,167 @@ function calculateCrop(
 }
 
 
-/*
- ============================================================
- 실제 사진 촬영 및 PNG 생성
- ============================================================
-*/
+/* ============================================================
+   DOM 이미지 레이어가 실제로 화면에 보이는지 확인
+   ============================================================ */
+
+function isVisibleElement(element) {
+
+  if (!element) {
+    return false;
+  }
+
+  const style =
+    window.getComputedStyle(
+      element
+    );
+
+  if (
+    style.display === "none" ||
+    style.visibility === "hidden" ||
+    Number(style.opacity) === 0
+  ) {
+    return false;
+  }
+
+  const rect =
+    element.getBoundingClientRect();
+
+  return (
+    rect.width > 0 &&
+    rect.height > 0
+  );
+
+}
+
+
+/* ============================================================
+   현재 화면에 표시 중인 img 레이어를 Canvas에 그대로 그리기
+
+   - 정적 이미지
+   - Animated WebP의 현재 프레임
+   모두 같은 방식으로 처리합니다.
+   ============================================================ */
+
+function drawImageOverlay(
+  context,
+  element,
+  stageElement,
+  outputWidth,
+  outputHeight
+) {
+
+  if (
+    !isVisibleElement(element) ||
+    !element.complete ||
+    !element.naturalWidth ||
+    !element.naturalHeight
+  ) {
+    return;
+  }
+
+  const stageRect =
+    stageElement.getBoundingClientRect();
+
+  const rect =
+    element.getBoundingClientRect();
+
+  if (
+    !stageRect.width ||
+    !stageRect.height
+  ) {
+    return;
+  }
+
+  const scaleX =
+    outputWidth /
+    stageRect.width;
+
+  const scaleY =
+    outputHeight /
+    stageRect.height;
+
+  const x =
+    (
+      rect.left -
+      stageRect.left
+    ) * scaleX;
+
+  const y =
+    (
+      rect.top -
+      stageRect.top
+    ) * scaleY;
+
+  const width =
+    rect.width *
+    scaleX;
+
+  const height =
+    rect.height *
+    scaleY;
+
+  context.drawImage(
+    element,
+    x,
+    y,
+    width,
+    height
+  );
+
+}
+
+
+/* ============================================================
+   AR Canvas를 최종 사진에 합성
+   ============================================================ */
+
+function drawArCanvas(
+  context,
+  arCanvasElement,
+  outputWidth,
+  outputHeight
+) {
+
+  if (
+    !isVisibleElement(
+      arCanvasElement
+    ) ||
+    !arCanvasElement.width ||
+    !arCanvasElement.height
+  ) {
+    return;
+  }
+
+  context.drawImage(
+    arCanvasElement,
+    0,
+    0,
+    outputWidth,
+    outputHeight
+  );
+
+}
+
+
+/* ============================================================
+   실제 사진 촬영 및 PNG 생성
+   ============================================================
+
+   현재 화면의 레이어를 그대로 합성합니다.
+
+   카메라
+   → 정적/움직이는 배경
+   → 정적/움직이는 캐릭터
+   → 캐릭터 전용 title.png
+   → AR Canvas
+   → PNG
+   ============================================================ */
 
 export async function capturePhoto(
   videoElement,
   canvasElement,
-  selectedBackground,
-  selectedCharacter = null
+  layers = {}
 ) {
 
   const outputWidth =
@@ -152,16 +235,11 @@ export async function capturePhoto(
   const outputHeight =
     CONFIG.outputHeight;
 
-
-  /*
-   Canvas 실제 저장 해상도
-  */
   canvasElement.width =
     outputWidth;
 
   canvasElement.height =
     outputHeight;
-
 
   const context =
     canvasElement.getContext(
@@ -171,7 +249,6 @@ export async function capturePhoto(
       }
     );
 
-
   context.clearRect(
     0,
     0,
@@ -179,16 +256,11 @@ export async function capturePhoto(
     outputHeight
   );
 
-
-  /*
-   실제 카메라 스트림 해상도
-  */
   const videoWidth =
     videoElement.videoWidth;
 
   const videoHeight =
     videoElement.videoHeight;
-
 
   if (
     !videoWidth ||
@@ -201,10 +273,9 @@ export async function capturePhoto(
 
   }
 
-
   const targetAspectRatio =
-    outputWidth / outputHeight;
-
+    outputWidth /
+    outputHeight;
 
   const crop =
     calculateCrop(
@@ -214,18 +285,12 @@ export async function capturePhoto(
     );
 
 
-  /*
-   ----------------------------------------------------------
-   카메라 영상 그리기
-   ----------------------------------------------------------
-  */
+  /* ----------------------------------------------------------
+     카메라 영상
+     ---------------------------------------------------------- */
 
   context.save();
 
-
-  /*
-   전면 카메라를 미리보기와 같은 거울 방향으로 저장합니다.
-  */
   if (
     CONFIG.facingMode === "user" &&
     CONFIG.mirrorFrontCamera
@@ -243,149 +308,99 @@ export async function capturePhoto(
 
   }
 
-
   context.drawImage(
-
     videoElement,
-
-    /* 원본 카메라에서 가져올 영역 */
     crop.sx,
     crop.sy,
     crop.sw,
     crop.sh,
-
-    /* 최종 Canvas 출력 영역 */
     0,
     0,
     outputWidth,
     outputHeight
-
   );
-
 
   context.restore();
 
 
-  /*
-   ----------------------------------------------------------
-   선택한 정적 캐릭터 합성
-   ----------------------------------------------------------
+  const stageElement =
+    layers.cameraStageElement;
 
-   배경/캐릭터 모드는 상호 배타적으로 관리되므로
-   캐릭터가 전달되는 경우 selectedBackground는 null입니다.
-   캐릭터는 미리보기와 동일하게 사진 오른쪽 아래에 배치합니다.
-  */
+  if (!stageElement) {
 
-  if (
-    selectedCharacter &&
-    selectedCharacter.src
-  ) {
-
-    const characterImage =
-      await loadImage(
-        selectedCharacter.src
-      );
-
-
-    const placement =
-      selectedCharacter.placement || {};
-
-
-    const widthRatio =
-      placement.widthRatio ??
-      0.40;
-
-
-    const rightRatio =
-      placement.rightRatio ??
-      0.02;
-
-
-    const bottomRatio =
-      placement.bottomRatio ??
-      0;
-
-
-    const characterWidth =
-      outputWidth * widthRatio;
-
-
-    const characterHeight =
-      characterWidth *
-      (
-        characterImage.naturalHeight /
-        characterImage.naturalWidth
-      );
-
-
-    const characterX =
-      outputWidth -
-      characterWidth -
-      (outputWidth * rightRatio);
-
-
-    const characterY =
-      outputHeight -
-      characterHeight -
-      (outputHeight * bottomRatio);
-
-
-    context.drawImage(
-      characterImage,
-      characterX,
-      characterY,
-      characterWidth,
-      characterHeight
+    throw new Error(
+      "촬영 화면 정보를 찾을 수 없습니다."
     );
 
   }
 
 
-  /*
-   ----------------------------------------------------------
-   선택한 정적 배경/프레임을 카메라 위에 합성
-   ----------------------------------------------------------
+  /* ----------------------------------------------------------
+     화면에 보이는 이미지 레이어
 
-   배경/캐릭터 모드는 상호 배타적으로 관리되므로
-   배경이 전달되는 경우 selectedCharacter는 null입니다.
-   현재 배경은 중앙이 투명한 프레임 이미지 방식입니다.
-  */
+     네 모드는 상호 배타적이라 한 효과만 활성화되지만,
+     캐릭터 계열에서는 title.png이 함께 표시됩니다.
+     ---------------------------------------------------------- */
 
-  if (
-    selectedBackground &&
-    selectedBackground.src
-  ) {
+  drawImageOverlay(
+    context,
+    layers.backgroundOverlayElement,
+    stageElement,
+    outputWidth,
+    outputHeight
+  );
 
-    const backgroundImage =
-      await loadImage(
-        selectedBackground.src
-      );
+  drawImageOverlay(
+    context,
+    layers.animatedBackgroundOverlayElement,
+    stageElement,
+    outputWidth,
+    outputHeight
+  );
+
+  drawImageOverlay(
+    context,
+    layers.characterOverlayElement,
+    stageElement,
+    outputWidth,
+    outputHeight
+  );
+
+  drawImageOverlay(
+    context,
+    layers.animatedCharacterOverlayElement,
+    stageElement,
+    outputWidth,
+    outputHeight
+  );
+
+  drawImageOverlay(
+    context,
+    layers.characterTitleOverlayElement,
+    stageElement,
+    outputWidth,
+    outputHeight
+  );
+
+  drawArCanvas(
+    context,
+    layers.arOverlayCanvasElement,
+    outputWidth,
+    outputHeight
+  );
 
 
-    context.drawImage(
-      backgroundImage,
-      0,
-      0,
-      outputWidth,
-      outputHeight
-    );
-
-  }
-
-
-  /*
-   Canvas → PNG Blob
-  */
   const blob =
-    await new Promise(resolve => {
+    await new Promise(
+      resolve => {
 
-      canvasElement.toBlob(
-        resolve,
-        "image/png"
-      );
+        canvasElement.toBlob(
+          resolve,
+          "image/png"
+        );
 
-    });
-
+      }
+    );
 
   if (!blob) {
 
@@ -395,47 +410,54 @@ export async function capturePhoto(
 
   }
 
-
   return blob;
 
 }
 
 
-/*
- ============================================================
- 저장 파일명 생성
- ============================================================
-*/
+/* ============================================================
+   저장 파일명
+   ============================================================ */
 
 function createFilename() {
 
   const now =
     new Date();
 
-
   const pad =
     value =>
-      String(value).padStart(2, "0");
-
+      String(value).padStart(
+        2,
+        "0"
+      );
 
   const year =
     now.getFullYear();
 
   const month =
-    pad(now.getMonth() + 1);
+    pad(
+      now.getMonth() + 1
+    );
 
   const day =
-    pad(now.getDate());
+    pad(
+      now.getDate()
+    );
 
   const hour =
-    pad(now.getHours());
+    pad(
+      now.getHours()
+    );
 
   const minute =
-    pad(now.getMinutes());
+    pad(
+      now.getMinutes()
+    );
 
   const second =
-    pad(now.getSeconds());
-
+    pad(
+      now.getSeconds()
+    );
 
   return (
     `photo_${year}${month}${day}_` +
@@ -445,21 +467,19 @@ function createFilename() {
 }
 
 
-/*
- ============================================================
- PNG 다운로드
- ============================================================
-*/
+/* ============================================================
+   PNG 다운로드
+   ============================================================ */
 
 export function downloadPhoto(blob) {
 
   const url =
     URL.createObjectURL(blob);
 
-
   const anchor =
-    document.createElement("a");
-
+    document.createElement(
+      "a"
+    );
 
   anchor.href =
     url;
@@ -467,23 +487,20 @@ export function downloadPhoto(blob) {
   anchor.download =
     createFilename();
 
-
-  document.body.appendChild(anchor);
-
+  document.body.appendChild(
+    anchor
+  );
 
   anchor.click();
 
-
   anchor.remove();
 
-
-  /*
-   생성한 임시 URL을 메모리에서 해제합니다.
-  */
   window.setTimeout(
     () => {
 
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(
+        url
+      );
 
     },
     1000

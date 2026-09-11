@@ -88,6 +88,49 @@
           aria-hidden="true"
         >
 
+        <!--
+          움직이는 배경 레이어
+          electric / grassmove / spacemove가 여기에 표시됩니다.
+        -->
+        <img
+          id="animatedBackgroundOverlay"
+          class="animated-background-overlay"
+          alt=""
+          aria-hidden="true"
+        >
+
+        <!--
+          움직이는 캐릭터 레이어
+          applemove / catmove가 여기에 표시됩니다.
+        -->
+        <img
+          id="animatedCharacterOverlay"
+          class="animated-character-overlay"
+          alt=""
+          aria-hidden="true"
+        >
+
+        <!--
+          캐릭터와 움직이는 캐릭터에서만 표시되는 타이틀.
+          배경 / 움직이는 배경 / AR에서는 표시되지 않습니다.
+        -->
+        <img
+          id="characterTitleOverlay"
+          class="character-title-overlay"
+          alt="희망의 과학싹잔치"
+          aria-hidden="true"
+        >
+
+        <!--
+          얼굴인식 AR 전용 Canvas.
+          MediaPipe Face Landmarker 결과를 이용해 왕관/안경/머리띠를 그립니다.
+        -->
+        <canvas
+          id="arOverlayCanvas"
+          class="ar-overlay-canvas"
+          aria-hidden="true"
+        ></canvas>
+
         <!-- 촬영 플래시 -->
         <div
           id="cameraFlash"

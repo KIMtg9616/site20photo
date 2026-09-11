@@ -1,0 +1,8 @@
+정적 캐릭터 적용 정보
+- Einstein.png: 800x800 PNG (투명)
+- Galilei.png: 800x800 PNG (투명)
+- Newton.png: 800x800 PNG (투명)
+- thumb-einstein.webp: 320x240 WebP
+- thumb-galilei.webp: 320x240 WebP
+- thumb-newton.webp: 320x240 WebP
+- 기본 화면 배치: 우측 하단, 사진 폭의 40%

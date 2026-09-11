@@ -8,52 +8,30 @@
  배경 → 캐릭터 → 움직임 → AR → 배경
 
  중요:
- 네 모드는 서로 '동시에 적용되지 않는 독립 모드'입니다.
- 예를 들어 배경을 적용한 상태에서 캐릭터를 선택하면
- 기존 배경은 자동으로 해제되고 캐릭터만 적용됩니다.
+ 네 모드는 서로 동시에 적용되지 않는 독립 모드입니다.
+ 다른 모드에서 실제 항목을 선택하면 기존 효과는 자동 해제됩니다.
 */
 
 export const CONFIG = {
 
-  /*
-   ----------------------------------------------------------
-   최종 저장 사진 해상도
-   ----------------------------------------------------------
-  */
-
   outputWidth: 1440,
   outputHeight: 1080,
 
-
-  /*
-   기본 카메라
-
-   user        = 전면 카메라
-   environment = 후면 카메라
-  */
-
   facingMode: "user",
-
-
-  /*
-   전면 카메라 촬영 결과도
-   미리보기처럼 거울 방향으로 저장합니다.
-  */
-
   mirrorFrontCamera: true,
 
-
   /*
-   ----------------------------------------------------------
-   선택 모드
-   ----------------------------------------------------------
-
-   itemsKey:
-   해당 모드에서 사용할 항목 배열 이름입니다.
+   캐릭터와 움직이는 캐릭터에서만
+   카메라 좌측 상단에 표시되는 타이틀 이미지입니다.
   */
+  characterTitle: {
+    src: "./assets/logo/title.png",
+    widthRatio: 0.34,
+    leftRatio: 0.02,
+    topRatio: 0.02
+  },
 
   selectionModes: [
-
     {
       id: "background",
       buttonLabel: "배경",
@@ -62,7 +40,6 @@ export const CONFIG = {
       itemsKey: "backgrounds",
       emptyText: "등록된 배경이 없습니다."
     },
-
     {
       id: "character",
       buttonLabel: "캐릭터",
@@ -71,7 +48,6 @@ export const CONFIG = {
       itemsKey: "characters",
       emptyText: "등록된 캐릭터가 없습니다."
     },
-
     {
       id: "motion",
       buttonLabel: "움직임",
@@ -80,7 +56,6 @@ export const CONFIG = {
       itemsKey: "motionAssets",
       emptyText: "등록된 움직이는 배경 또는 캐릭터가 없습니다."
     },
-
     {
       id: "ar",
       buttonLabel: "AR",
@@ -89,179 +64,202 @@ export const CONFIG = {
       itemsKey: "arAssets",
       emptyText: "등록된 AR 효과가 없습니다."
     }
-
   ],
 
-
-  /*
-   ----------------------------------------------------------
-   1차: 정적 배경
-   ----------------------------------------------------------
-
-   src       = 실제 촬영용 고해상도 원본
-   thumbnail = 선택창용 저해상도 WebP
-  */
-
+  /* 1차: 정적 배경 */
   backgrounds: [
-
     {
       id: "none",
       name: "배경 없음",
       src: null,
       thumbnail: null
     },
-
     {
       id: "20years",
       name: "희망의 과학싹잔치 20주년",
-
-      src:
-        "./assets/backgrounds/static/20years.png",
-
-      thumbnail:
-        "./assets/backgrounds/thumbnails/thumb-20years.webp"
+      src: "./assets/backgrounds/static/20years.png",
+      thumbnail: "./assets/backgrounds/thumbnails/thumb-20years.webp"
     },
-
     {
       id: "bell",
       name: "전화기 발명 이야기",
-
-      src:
-        "./assets/backgrounds/static/bell.png",
-
-      thumbnail:
-        "./assets/backgrounds/thumbnails/thumb-bell.webp"
+      src: "./assets/backgrounds/static/bell.png",
+      thumbnail: "./assets/backgrounds/thumbnails/thumb-bell.webp"
     },
-
     {
       id: "drama",
       name: "과학연극",
-
-      src:
-        "./assets/backgrounds/static/20ybell.png",
-
-      thumbnail:
-        "./assets/backgrounds/thumbnails/thumb-20ybell.webp"
+      src: "./assets/backgrounds/static/20ybell.png",
+      thumbnail: "./assets/backgrounds/thumbnails/thumb-20ybell.webp"
     }
-
   ],
 
-
-  /*
-   ----------------------------------------------------------
-   2차: 정적 캐릭터
-   ----------------------------------------------------------
-
-   첫 번째 '캐릭터 없음'을 누르면 현재 적용 중인 효과가
-   모두 해제되어 카메라 영상만 남습니다.
-  */
-
+  /* 2차: 정적 캐릭터 */
   characters: [
-
     {
       id: "none",
       name: "캐릭터 없음",
       src: null,
       thumbnail: null
     },
-
     {
       id: "einstein",
       name: "아인슈타인",
-
-      src:
-        "./assets/characters/static/Einstein.png",
-
-      thumbnail:
-        "./assets/characters/thumbnails/thumb-einstein.webp",
-
+      src: "./assets/characters/static/Einstein.png",
+      thumbnail: "./assets/characters/thumbnails/thumb-einstein.webp",
       placement: {
         widthRatio: 0.40,
         rightRatio: 0.02,
         bottomRatio: 0.00
       }
     },
-
     {
       id: "galilei",
       name: "갈릴레이",
-
-      src:
-        "./assets/characters/static/Galilei.png",
-
-      thumbnail:
-        "./assets/characters/thumbnails/thumb-galilei.webp",
-
+      src: "./assets/characters/static/Galilei.png",
+      thumbnail: "./assets/characters/thumbnails/thumb-galilei.webp",
       placement: {
         widthRatio: 0.40,
         rightRatio: 0.02,
         bottomRatio: 0.00
       }
     },
-
     {
       id: "newton",
       name: "뉴턴",
-
-      src:
-        "./assets/characters/static/Newton.png",
-
-      thumbnail:
-        "./assets/characters/thumbnails/thumb-newton.webp",
-
+      src: "./assets/characters/static/Newton.png",
+      thumbnail: "./assets/characters/thumbnails/thumb-newton.webp",
       placement: {
         widthRatio: 0.40,
         rightRatio: 0.02,
         bottomRatio: 0.00
       }
     }
-
   ],
 
-
   /*
-   ----------------------------------------------------------
-   3차: 움직이는 배경 및 캐릭터
-   ----------------------------------------------------------
+   3차: 움직이는 배경 및 움직이는 캐릭터
 
-   아직 실제 움직임 자료는 등록하지 않았지만
-   '움직임 없음' 항목은 항상 표시합니다.
-
-   이후 실제 자료를 이 배열 뒤에 추가하면 됩니다.
+   type:
+   animated-background = 카메라 전체에 움직이는 배경 적용
+   animated-character  = 오른쪽 아래에 움직이는 캐릭터 적용
   */
-
   motionAssets: [
-
     {
       id: "none",
       name: "움직임 없음",
       src: null,
       thumbnail: null,
       type: "none"
+    },
+    {
+      id: "electric",
+      name: "전자기유도",
+      src: "./assets/animated/backgrounds/electric.webp",
+      thumbnail: "./assets/animated/thumbnails/thumb-electric.webp",
+      type: "animated-background"
+    },
+    {
+      id: "grassmove",
+      name: "풀 배경",
+      src: "./assets/animated/backgrounds/grassmove.webp",
+      thumbnail: "./assets/animated/thumbnails/thumb-grassmove.webp",
+      type: "animated-background"
+    },
+    {
+      id: "spacemove",
+      name: "우주배경",
+      src: "./assets/animated/backgrounds/spacemove.webp",
+      thumbnail: "./assets/animated/thumbnails/thumb-spacemove.webp",
+      type: "animated-background"
+    },
+    {
+      id: "applemove",
+      name: "뉴턴의 사과",
+      src: "./assets/animated/characters/applemove.webp",
+      thumbnail: "./assets/animated/thumbnails/thumb-applemove.webp",
+      type: "animated-character",
+      placement: {
+        widthRatio: 0.34,
+        rightRatio: 0.03,
+        bottomRatio: 0.02
+      }
+    },
+    {
+      id: "catmove",
+      name: "고양이",
+      src: "./assets/animated/characters/catmove.webp",
+      thumbnail: "./assets/animated/thumbnails/thumb-catmove.webp",
+      type: "animated-character",
+      placement: {
+        widthRatio: 0.36,
+        rightRatio: 0.03,
+        bottomRatio: 0.02
+      }
     }
-
   ],
 
-
   /*
-   ----------------------------------------------------------
    4차: 얼굴인식 AR
-   ----------------------------------------------------------
 
-   아직 실제 AR 자료는 등록하지 않았지만
-   'AR 없음' 항목은 항상 표시합니다.
+   arKind:
+   crown    = 머리 위 왕관
+   glasses  = 눈 위치에 맞춰 안경
+   headband = 머리와 얼굴 주위에 맞춘 머리띠
   */
-
   arAssets: [
-
     {
       id: "none",
       name: "AR 없음",
       src: null,
       thumbnail: null,
       type: "none"
+    },
+    {
+      id: "crown",
+      name: "왕관",
+      src: "./assets/ar/effects/crown.png",
+      thumbnail: "./assets/ar/thumbnails/thumb-crown.webp",
+      type: "ar",
+      arKind: "crown",
+      scale: 1.45
+    },
+    {
+      id: "glasses1",
+      name: "안경1",
+      src: "./assets/ar/effects/glasses1.png",
+      thumbnail: "./assets/ar/thumbnails/thumb-glasses1.webp",
+      type: "ar",
+      arKind: "glasses",
+      scale: 2.35
+    },
+    {
+      id: "glasses2",
+      name: "안경2",
+      src: "./assets/ar/effects/glasses2.png",
+      thumbnail: "./assets/ar/thumbnails/thumb-glasses2.webp",
+      type: "ar",
+      arKind: "glasses",
+      scale: 2.35
+    },
+    {
+      id: "head1",
+      name: "머리띠1",
+      src: "./assets/ar/effects/head1.png",
+      thumbnail: "./assets/ar/thumbnails/thumb-head1.webp",
+      type: "ar",
+      arKind: "headband",
+      scale: 1.65
+    },
+    {
+      id: "head2",
+      name: "머리띠2",
+      src: "./assets/ar/effects/head2.png",
+      thumbnail: "./assets/ar/thumbnails/thumb-head2.webp",
+      type: "ar",
+      arKind: "headband",
+      scale: 1.70
     }
-
   ]
 
 };

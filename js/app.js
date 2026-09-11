@@ -7,6 +7,7 @@
    1. 카메라 실행
    2. 정적 배경 선택
    3. 정적 캐릭터 선택 및 합성
+      - 배경/캐릭터/움직임/AR은 서로 동시 적용되지 않음
    4. 사진 촬영
    4. PNG 저장
    5. 다시 찍기
@@ -799,8 +800,8 @@ captureButton.addEventListener(
 
 
       /*
-        현재 1차 촬영에서는 선택된 정적 배경만
-        capture.js로 전달합니다.
+        현재 활성 모드가 배경일 때만 정적 배경이 반환됩니다.
+        캐릭터 등 다른 모드가 활성화되어 있으면 null입니다.
       */
       const selectedBackground =
         backgroundManager
@@ -808,7 +809,8 @@ captureButton.addEventListener(
 
 
       /*
-        2차 정적 캐릭터 선택값도 함께 가져옵니다.
+        현재 활성 모드가 캐릭터일 때만 캐릭터가 반환됩니다.
+        배경 등 다른 모드가 활성화되어 있으면 null입니다.
       */
       const selectedCharacter =
         backgroundManager

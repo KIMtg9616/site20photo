@@ -171,6 +171,45 @@ body {
 
 
 /* =========================================================
+   정적 캐릭터 레이어
+   =========================================================
+
+   기본 배치:
+   - 화면 오른쪽 아래
+   - 카메라 폭의 약 40%
+   - 배경 프레임보다 아래(z-index: 1)
+
+   실제 위치/크기는 config.js의 placement 값과
+   backgrounds.js에서 CSS 변수로 적용됩니다.
+   ========================================================= */
+
+.character-overlay {
+  position: absolute;
+
+  right: var(--character-right, 2%);
+  bottom: var(--character-bottom, 0%);
+
+  width: var(--character-width, 40%);
+  height: auto;
+
+  max-width: 58%;
+  max-height: 76%;
+
+  object-fit: contain;
+  object-position: right bottom;
+
+  pointer-events: none;
+
+  z-index: 1;
+
+  display: none;
+
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+
+/* =========================================================
    카메라 안내
    ========================================================= */
 

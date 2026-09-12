@@ -21,6 +21,22 @@ export const CONFIG = {
   mirrorFrontCamera: true,
 
   /*
+   GIF 촬영 설정
+
+   - 버튼을 누르고 있는 동안 녹화
+   - 최대 3초
+   - 스마트폰 성능과 파일 크기를 고려해 480×360 / 8fps 사용
+   - 최종 GIF는 무한 반복
+  */
+  gif: {
+    width: 480,
+    height: 360,
+    fps: 8,
+    maxDurationMs: 3000,
+    colors: 128
+  },
+
+  /*
    캐릭터와 움직이는 캐릭터에서만
    카메라 좌측 상단에 표시되는 타이틀 이미지입니다.
   */

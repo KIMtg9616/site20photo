@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" role="img" aria-labelledby="title desc">
+  <title id="title">공지 이미지 1</title>
+  <desc id="desc">실제 공지 이미지로 교체할 수 있는 예시 이미지</desc>
+  <rect width="1080" height="1350" rx="56" fill="#f8fafc"/>
+  <rect x="54" y="54" width="972" height="1242" rx="42" fill="#ffffff" stroke="#dbeafe" stroke-width="8"/>
+  <circle cx="540" cy="310" r="118" fill="#eff6ff"/>
+  <path d="M455 320v-52l220-86v256l-220-86z" fill="#2563eb"/>
+  <rect x="402" y="285" width="54" height="92" rx="15" fill="#1d4ed8"/>
+  <text x="540" y="565" text-anchor="middle" font-family="Arial, sans-serif" font-size="84" font-weight="800" fill="#111827">공지사항 1</text>
+  <text x="540" y="660" text-anchor="middle" font-family="Arial, sans-serif" font-size="42" font-weight="600" fill="#475569">실제 공지 이미지로 교체해 주세요</text>
+  <text x="540" y="1010" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" fill="#64748b">assets/notices/notice-01.svg</text>
+</svg>

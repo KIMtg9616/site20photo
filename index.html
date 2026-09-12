@@ -172,54 +172,88 @@
 
       <div class="capture-controls">
 
-        <!-- 왼쪽: 기능 모드 변경 -->
-        <div class="mode-switch-control">
+        <!-- 왼쪽: 공지 + 기능 모드 변경 -->
+        <div class="left-capture-controls">
 
-          <button
-            id="modeSwitchButton"
-            class="mode-switch-button"
-            type="button"
-            aria-label="선택 기능 변경, 현재 배경"
-            title="선택 기능 변경"
-          >
+          <!-- 공지 모달 열기 -->
+          <div class="notice-control">
 
-            <span
-              id="modeSwitchIcon"
-              class="mode-switch-icon"
-              aria-hidden="true"
+            <button
+              id="noticeButton"
+              class="notice-button"
+              type="button"
+              aria-label="공지 보기"
+              title="공지 보기"
             >
               <svg
+                class="notice-icon"
                 viewBox="0 0 24 24"
                 aria-hidden="true"
               >
-                <rect
-                  x="3"
-                  y="4"
-                  width="18"
-                  height="16"
-                  rx="2"
-                ></rect>
-
-                <circle
-                  cx="8.2"
-                  cy="9"
-                  r="1.6"
-                ></circle>
-
-                <path
-                  d="M4.5 17l4.6-4.6 3.1 3.1 2.4-2.4 4.9 4.9"
-                ></path>
+                <path d="M5 10v4"></path>
+                <path d="M7 9.2l9-3.7v13l-9-3.7z"></path>
+                <path d="M16 8.3h2a2 2 0 0 1 2 2v3.4a2 2 0 0 1-2 2h-2"></path>
+                <path d="M8 15.2l1.2 4.3h3.2l-1.1-3.2"></path>
               </svg>
-            </span>
+            </button>
 
-          </button>
+            <p class="notice-label">
+              공지
+            </p>
 
-          <p
-            id="modeSwitchLabel"
-            class="mode-switch-label"
-          >
-            배경
-          </p>
+          </div>
+
+
+          <!-- 기능 모드 변경 -->
+          <div class="mode-switch-control">
+
+            <button
+              id="modeSwitchButton"
+              class="mode-switch-button"
+              type="button"
+              aria-label="선택 기능 변경, 현재 배경"
+              title="선택 기능 변경"
+            >
+
+              <span
+                id="modeSwitchIcon"
+                class="mode-switch-icon"
+                aria-hidden="true"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="3"
+                    y="4"
+                    width="18"
+                    height="16"
+                    rx="2"
+                  ></rect>
+
+                  <circle
+                    cx="8.2"
+                    cy="9"
+                    r="1.6"
+                  ></circle>
+
+                  <path
+                    d="M4.5 17l4.6-4.6 3.1 3.1 2.4-2.4 4.9 4.9"
+                  ></path>
+                </svg>
+              </span>
+
+            </button>
+
+            <p
+              id="modeSwitchLabel"
+              class="mode-switch-label"
+            >
+              배경
+            </p>
+
+          </div>
 
         </div>
 
@@ -430,6 +464,106 @@
     aria-live="polite"
     aria-atomic="true"
   ></div>
+
+
+  <!-- =========================================================
+       공지 모달
+       - 이미지 공지를 한 장씩 표시
+       - 좌/우 화살표로 이동
+       - X 버튼 또는 바깥 영역 클릭으로 닫기
+       ========================================================= -->
+  <div
+    id="noticeModal"
+    class="notice-modal"
+    aria-hidden="true"
+  >
+
+    <div
+      id="noticeModalBackdrop"
+      class="notice-modal-backdrop"
+    >
+
+      <section
+        class="notice-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="noticeModalTitle"
+      >
+
+        <h2
+          id="noticeModalTitle"
+          class="notice-modal-title"
+        >
+          공지
+        </h2>
+
+        <div class="notice-image-area">
+          <img
+            id="noticeImage"
+            class="notice-image"
+            alt="공지 이미지"
+          >
+
+          <div
+            id="noticeEmpty"
+            class="notice-empty hidden"
+          >
+            등록된 공지가 없습니다.
+          </div>
+        </div>
+
+        <div
+          id="noticeCounter"
+          class="notice-counter"
+          aria-live="polite"
+        ></div>
+
+        <div class="notice-modal-actions">
+
+          <button
+            id="noticePrevButton"
+            class="notice-nav-button"
+            type="button"
+            aria-label="이전 공지"
+            title="이전 공지"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M15 5l-7 7 7 7"></path>
+            </svg>
+          </button>
+
+          <button
+            id="noticeCloseButton"
+            class="notice-close-button"
+            type="button"
+            aria-label="공지 닫기"
+            title="닫기"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 6l12 12"></path>
+              <path d="M18 6L6 18"></path>
+            </svg>
+          </button>
+
+          <button
+            id="noticeNextButton"
+            class="notice-nav-button"
+            type="button"
+            aria-label="다음 공지"
+            title="다음 공지"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M9 5l7 7-7 7"></path>
+            </svg>
+          </button>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </div>
 
 
   <script

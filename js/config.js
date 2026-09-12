@@ -47,6 +47,26 @@ export const CONFIG = {
     topRatio: 0.02
   },
 
+
+  /*
+   공지 이미지
+
+   실제 공지 이미지를 추가할 때 assets/notices 폴더에 넣고
+   아래 src만 변경/추가하면 됩니다.
+  */
+  notices: [
+    {
+      id: "notice-01",
+      name: "공지 1",
+      src: "./assets/notices/notice-01.svg"
+    },
+    {
+      id: "notice-02",
+      name: "공지 2",
+      src: "./assets/notices/notice-02.svg"
+    }
+  ],
+
   selectionModes: [
     {
       id: "background",

@@ -142,6 +142,60 @@ const gifButton =
   );
 
 
+const noticeButton =
+  document.getElementById(
+    "noticeButton"
+  );
+
+
+const noticeModal =
+  document.getElementById(
+    "noticeModal"
+  );
+
+
+const noticeModalBackdrop =
+  document.getElementById(
+    "noticeModalBackdrop"
+  );
+
+
+const noticeImage =
+  document.getElementById(
+    "noticeImage"
+  );
+
+
+const noticeEmpty =
+  document.getElementById(
+    "noticeEmpty"
+  );
+
+
+const noticeCounter =
+  document.getElementById(
+    "noticeCounter"
+  );
+
+
+const noticePrevButton =
+  document.getElementById(
+    "noticePrevButton"
+  );
+
+
+const noticeNextButton =
+  document.getElementById(
+    "noticeNextButton"
+  );
+
+
+const noticeCloseButton =
+  document.getElementById(
+    "noticeCloseButton"
+  );
+
+
 const modeSwitchButton =
   document.getElementById(
     "modeSwitchButton"
@@ -794,6 +848,14 @@ function setStandardControlsDisabled(
 
   modeSwitchButton.disabled =
     disabled;
+
+
+  if (noticeButton) {
+
+    noticeButton.disabled =
+      disabled;
+
+  }
 
 
   if (switchCameraButton) {
@@ -1600,6 +1662,291 @@ shareButton.addEventListener(
 
       shareButton.disabled =
         false;
+
+    }
+
+  }
+);
+
+
+/* ============================================================
+   공지 모달
+   ============================================================ */
+
+let currentNoticeIndex =
+  0;
+
+
+function getNotices() {
+
+  return Array.isArray(
+    CONFIG.notices
+  )
+    ? CONFIG.notices
+    : [];
+
+}
+
+
+function renderNotice() {
+
+  const notices =
+    getNotices();
+
+
+  if (notices.length === 0) {
+
+    noticeImage.removeAttribute(
+      "src"
+    );
+
+
+    noticeImage.classList.add(
+      "hidden"
+    );
+
+
+    noticeEmpty.classList.remove(
+      "hidden"
+    );
+
+
+    noticeCounter.textContent =
+      "";
+
+
+    noticePrevButton.disabled =
+      true;
+
+
+    noticeNextButton.disabled =
+      true;
+
+
+    return;
+
+  }
+
+
+  currentNoticeIndex =
+    (
+      currentNoticeIndex +
+      notices.length
+    ) %
+    notices.length;
+
+
+  const notice =
+    notices[currentNoticeIndex];
+
+
+  noticeImage.src =
+    notice.src;
+
+
+  noticeImage.alt =
+    notice.name ||
+    `공지 ${currentNoticeIndex + 1}`;
+
+
+  noticeImage.classList.remove(
+    "hidden"
+  );
+
+
+  noticeEmpty.classList.add(
+    "hidden"
+  );
+
+
+  noticeCounter.textContent =
+    `${currentNoticeIndex + 1} / ${notices.length}`;
+
+
+  const hasMultiple =
+    notices.length > 1;
+
+
+  noticePrevButton.disabled =
+    !hasMultiple;
+
+
+  noticeNextButton.disabled =
+    !hasMultiple;
+
+}
+
+
+function openNoticeModal() {
+
+  if (
+    gifRecording ||
+    gifEncoding
+  ) {
+    return;
+  }
+
+
+  renderNotice();
+
+
+  noticeModal.classList.add(
+    "show"
+  );
+
+
+  noticeModal.setAttribute(
+    "aria-hidden",
+    "false"
+  );
+
+
+  document.body.classList.add(
+    "modal-open"
+  );
+
+
+  window.setTimeout(
+    () => {
+      noticeCloseButton.focus();
+    },
+    0
+  );
+
+}
+
+
+function closeNoticeModal() {
+
+  noticeModal.classList.remove(
+    "show"
+  );
+
+
+  noticeModal.setAttribute(
+    "aria-hidden",
+    "true"
+  );
+
+
+  document.body.classList.remove(
+    "modal-open"
+  );
+
+
+  if (noticeButton) {
+    noticeButton.focus();
+  }
+
+}
+
+
+function showPreviousNotice() {
+
+  const notices =
+    getNotices();
+
+
+  if (notices.length <= 1) {
+    return;
+  }
+
+
+  currentNoticeIndex =
+    (
+      currentNoticeIndex -
+      1 +
+      notices.length
+    ) %
+    notices.length;
+
+
+  renderNotice();
+
+}
+
+
+function showNextNotice() {
+
+  const notices =
+    getNotices();
+
+
+  if (notices.length <= 1) {
+    return;
+  }
+
+
+  currentNoticeIndex =
+    (
+      currentNoticeIndex +
+      1
+    ) %
+    notices.length;
+
+
+  renderNotice();
+
+}
+
+
+if (noticeButton) {
+
+  noticeButton.addEventListener(
+    "click",
+    openNoticeModal
+  );
+
+}
+
+
+noticePrevButton.addEventListener(
+  "click",
+  showPreviousNotice
+);
+
+
+noticeNextButton.addEventListener(
+  "click",
+  showNextNotice
+);
+
+
+noticeCloseButton.addEventListener(
+  "click",
+  closeNoticeModal
+);
+
+
+noticeModalBackdrop.addEventListener(
+  "click",
+  event => {
+
+    if (
+      event.target ===
+      noticeModalBackdrop
+    ) {
+
+      closeNoticeModal();
+
+    }
+
+  }
+);
+
+
+document.addEventListener(
+  "keydown",
+  event => {
+
+    if (
+      event.key === "Escape" &&
+      noticeModal.classList.contains(
+        "show"
+      )
+    ) {
+
+      closeNoticeModal();
 
     }
 

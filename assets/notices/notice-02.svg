@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1350" role="img" aria-labelledby="title desc">
+  <title id="title">공지 이미지 2</title>
+  <desc id="desc">실제 공지 이미지로 교체할 수 있는 예시 이미지</desc>
+  <rect width="1080" height="1350" rx="56" fill="#f0fdf4"/>
+  <rect x="54" y="54" width="972" height="1242" rx="42" fill="#ffffff" stroke="#bbf7d0" stroke-width="8"/>
+  <circle cx="540" cy="310" r="118" fill="#dcfce7"/>
+  <path d="M460 282h160v150H460z" rx="20" fill="#16a34a"/>
+  <path d="M500 248v64M580 248v64M485 355h110" stroke="#ffffff" stroke-width="18" stroke-linecap="round"/>
+  <text x="540" y="565" text-anchor="middle" font-family="Arial, sans-serif" font-size="84" font-weight="800" fill="#111827">공지사항 2</text>
+  <text x="540" y="660" text-anchor="middle" font-family="Arial, sans-serif" font-size="42" font-weight="600" fill="#475569">좌·우 화살표로 공지를 넘길 수 있습니다</text>
+  <text x="540" y="1010" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" fill="#64748b">assets/notices/notice-02.svg</text>
+</svg>

@@ -109,16 +109,33 @@ function drawImageOverlay(
   element,
   stageElement,
   outputWidth,
-  outputHeight
+  outputHeight,
+  sourceOverride = null
 ) {
 
-  if (
-    !isVisibleElement(element) ||
-    !element.complete ||
-    !element.naturalWidth ||
-    !element.naturalHeight
-  ) {
+  if (!isVisibleElement(element)) {
     return;
+  }
+
+  /*
+    일반 촬영은 DOM img를 그대로 사용합니다.
+    GIF 녹화에서는 Animated WebP를 ImageDecoder로 해석한
+    현재 프레임(ImageBitmap)을 sourceOverride로 전달할 수 있습니다.
+  */
+  const source =
+    sourceOverride ||
+    element;
+
+  if (!sourceOverride) {
+
+    if (
+      !element.complete ||
+      !element.naturalWidth ||
+      !element.naturalHeight
+    ) {
+      return;
+    }
+
   }
 
   const stageRect =
@@ -163,7 +180,7 @@ function drawImageOverlay(
     scaleY;
 
   context.drawImage(
-    element,
+    source,
     x,
     y,
     width,
@@ -216,7 +233,8 @@ export function renderCompositeFrame(
   canvasElement,
   layers = {},
   outputWidth = CONFIG.outputWidth,
-  outputHeight = CONFIG.outputHeight
+  outputHeight = CONFIG.outputHeight,
+  animatedFrameOverrides = {}
 ) {
 
   if (
@@ -351,7 +369,9 @@ export function renderCompositeFrame(
     layers.animatedBackgroundOverlayElement,
     stageElement,
     outputWidth,
-    outputHeight
+    outputHeight,
+    animatedFrameOverrides.background ||
+      null
   );
 
   drawImageOverlay(
@@ -367,7 +387,9 @@ export function renderCompositeFrame(
     layers.animatedCharacterOverlayElement,
     stageElement,
     outputWidth,
-    outputHeight
+    outputHeight,
+    animatedFrameOverrides.character ||
+      null
   );
 
   drawImageOverlay(

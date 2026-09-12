@@ -597,11 +597,28 @@ export class ARTracker {
         eyeB.y
       ) / 2;
 
+    /*
+      전면 카메라에서는 landmark x 좌표를 이미 좌우 반전했기 때문에
+      눈 A→B 방향을 그대로 사용하면 각도가 약 180도 뒤집혀
+      AR 이미지가 거꾸로 보일 수 있습니다.
+
+      전면 카메라는 반대 방향 벡터(B→A)를 사용해
+      화면의 미러링과 같은 기울기만 유지합니다.
+    */
+    const isFrontCamera =
+      getCurrentFacingMode() ===
+      "user";
+
     const angle =
-      Math.atan2(
-        eyeB.y - eyeA.y,
-        eyeB.x - eyeA.x
-      );
+      isFrontCamera
+        ? Math.atan2(
+            eyeA.y - eyeB.y,
+            eyeA.x - eyeB.x
+          )
+        : Math.atan2(
+            eyeB.y - eyeA.y,
+            eyeB.x - eyeA.x
+          );
 
     const aspect =
       image.naturalHeight /

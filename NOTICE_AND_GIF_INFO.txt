@@ -1,0 +1,11 @@
+[공지 이미지]
+- 폴더: assets/notices/
+- 기본 예시: notice-01.svg, notice-02.svg
+- 실제 공지 PNG/WebP/SVG로 교체 가능
+- js/config.js의 CONFIG.notices 배열에서 src/name을 추가하거나 수정
+
+[GIF + Animated WebP]
+- GIF 녹화는 최대 3초 / 480x360 / 8fps 설정 유지
+- 지원 브라우저에서는 ImageDecoder(WebCodecs)로 Animated WebP 프레임을 직접 디코딩하여
+  카메라 영상과 움직이는 배경/캐릭터를 함께 GIF 프레임으로 합성
+- ImageDecoder 미지원 환경은 기존 DOM 이미지 캡처 방식으로 폴백

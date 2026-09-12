@@ -57,13 +57,18 @@ export const CONFIG = {
   notices: [
     {
       id: "notice-01",
-      name: "공지 1",
+      name: "체험 안내",
       src: "./assets/notices/notice-01.svg"
     },
     {
       id: "notice-02",
-      name: "공지 2",
+      name: "이벤트",
       src: "./assets/notices/notice-02.svg"
+    },
+    {
+      id: "notice-03",
+      name: "공지 사항",
+      src: "./assets/notices/notice-03.svg"
     }
   ],
 

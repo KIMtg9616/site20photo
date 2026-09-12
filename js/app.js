@@ -5,15 +5,12 @@
 
    현재 기능
    1. 카메라 실행
-   2. 정적 배경 선택
-   3. 정적 캐릭터 선택 및 합성
-      - 배경/캐릭터/움직임/AR은 서로 동시 적용되지 않음
-   4. 사진 촬영
-   4. PNG 저장
-   5. 다시 찍기
-   6. 전면 ↔ 후면 카메라 전환
-   7. 선택 모드 순환
-      배경 → 캐릭터 → 움직임 → AR → 배경
+   2. 배경 / 캐릭터 / 움직임 / AR 독립 선택
+   3. PNG 사진 촬영
+   4. 전면 ↔ 후면 카메라 전환
+   5. GIF 버튼을 누르고 있는 시간만큼 GIF 촬영 (최대 3초)
+   6. PNG / GIF 저장
+   7. 시스템 공유창을 통한 이미지 공유
    ============================================================ */
 
 
@@ -41,8 +38,14 @@ import {
 
 import {
   capturePhoto,
-  downloadPhoto
+  downloadMedia,
+  shareMedia
 } from "./capture.js";
+
+
+import {
+  GifRecorder
+} from "./gif.js";
 
 
 /* ============================================================
@@ -73,7 +76,6 @@ const backgroundOverlay =
   );
 
 
-/* 선택한 정적 캐릭터 */
 const characterOverlay =
   document.getElementById(
     "characterOverlay"
@@ -104,6 +106,12 @@ const arOverlayCanvas =
   );
 
 
+const gifTimer =
+  document.getElementById(
+    "gifTimer"
+  );
+
+
 const backgroundList =
   document.getElementById(
     "backgroundList"
@@ -128,9 +136,12 @@ const switchCameraButton =
   );
 
 
-/*
-  새로 추가된 왼쪽 기능 모드 버튼
-*/
+const gifButton =
+  document.getElementById(
+    "gifButton"
+  );
+
+
 const modeSwitchButton =
   document.getElementById(
     "modeSwitchButton"
@@ -185,8 +196,44 @@ const downloadButton =
   );
 
 
+const shareButton =
+  document.getElementById(
+    "shareButton"
+  );
+
+
 /* ============================================================
-   선택 관리자
+   화면 레이어 정보
+   ============================================================ */
+
+const captureLayers = {
+
+  cameraStageElement:
+    cameraStage,
+
+  backgroundOverlayElement:
+    backgroundOverlay,
+
+  characterOverlayElement:
+    characterOverlay,
+
+  animatedBackgroundOverlayElement:
+    animatedBackgroundOverlay,
+
+  animatedCharacterOverlayElement:
+    animatedCharacterOverlay,
+
+  characterTitleOverlayElement:
+    characterTitleOverlay,
+
+  arOverlayCanvasElement:
+    arOverlayCanvas
+
+};
+
+
+/* ============================================================
+   AR / 선택 관리자
    ============================================================ */
 
 const arTracker =
@@ -211,15 +258,54 @@ const backgroundManager =
 
 
 /* ============================================================
-   현재 촬영 결과
+   GIF 녹화기
    ============================================================ */
 
-let currentPhotoBlob =
+const gifRecorder =
+  new GifRecorder(
+    videoElement,
+    captureLayers
+  );
+
+
+let gifRecording =
+  false;
+
+
+let gifEncoding =
+  false;
+
+
+let gifStartedAt =
+  0;
+
+
+let gifTimerAnimationId =
   null;
 
 
-let currentPhotoUrl =
+let gifAutoStopTimerId =
   null;
+
+
+let gifPointerId =
+  null;
+
+
+/* ============================================================
+   현재 결과
+   ============================================================ */
+
+let currentResultBlob =
+  null;
+
+
+let currentResultUrl =
+  null;
+
+
+let currentResultType =
+  "png";
 
 
 /* ============================================================
@@ -230,17 +316,12 @@ let currentModeIndex =
   0;
 
 
-/*
-  기능 모드별 아이콘
+/* ============================================================
+   기능 모드별 아이콘
+   ============================================================ */
 
-  외부 이미지 파일을 추가하지 않고
-  SVG를 코드 내부에서 사용합니다.
-*/
 const MODE_ICONS = {
 
-  /*
-    배경: 사진/풍경
-  */
   background: `
     <svg
       viewBox="0 0 24 24"
@@ -267,9 +348,6 @@ const MODE_ICONS = {
   `,
 
 
-  /*
-    캐릭터: 얼굴/사람
-  */
   character: `
     <svg
       viewBox="0 0 24 24"
@@ -292,9 +370,6 @@ const MODE_ICONS = {
   `,
 
 
-  /*
-    움직임: 재생 + 움직임 선
-  */
   motion: `
     <svg
       viewBox="0 0 24 24"
@@ -327,9 +402,6 @@ const MODE_ICONS = {
   `,
 
 
-  /*
-    AR: 얼굴 스캔
-  */
   ar: `
     <svg
       viewBox="0 0 24 24"
@@ -386,9 +458,7 @@ function updateModeUI() {
     !Array.isArray(modes) ||
     modes.length === 0
   ) {
-
     return;
-
   }
 
 
@@ -396,24 +466,15 @@ function updateModeUI() {
     modes[currentModeIndex];
 
 
-  /*
-    왼쪽 버튼 아래 텍스트 변경
-  */
   modeSwitchLabel.textContent =
     mode.buttonLabel;
 
 
-  /*
-    모드에 맞는 아이콘 변경
-  */
   modeSwitchIcon.innerHTML =
     MODE_ICONS[mode.id] ||
     MODE_ICONS.background;
 
 
-  /*
-    접근성 설명도 현재 모드 이름으로 변경
-  */
   modeSwitchButton.setAttribute(
     "aria-label",
     `선택 기능 변경, 현재 ${mode.buttonLabel}`
@@ -426,10 +487,6 @@ function updateModeUI() {
   );
 
 
-  /*
-    카메라와 촬영 버튼 사이의 선택창을
-    현재 모드에 맞게 다시 그립니다.
-  */
   backgroundManager.setMode(
     mode.id
   );
@@ -438,29 +495,27 @@ function updateModeUI() {
 
 
 /* ============================================================
-   왼쪽 기능 모드 버튼
-
-   배경
-   → 캐릭터
-   → 움직임
-   → AR
-   → 배경
-
-   순서로 반복합니다.
+   모드 순환
    ============================================================ */
 
 modeSwitchButton.addEventListener(
   "click",
   () => {
 
+    if (
+      gifRecording ||
+      gifEncoding
+    ) {
+      return;
+    }
+
+
     const modeCount =
       CONFIG.selectionModes.length;
 
 
     if (modeCount === 0) {
-
       return;
-
     }
 
 
@@ -475,95 +530,6 @@ modeSwitchButton.addEventListener(
 
   }
 );
-
-
-/* ============================================================
-   웹페이지 초기화
-   ============================================================ */
-
-async function initialize() {
-
-  /*
-    첫 화면:
-    배경 선택 모드
-  */
-  updateModeUI();
-
-
-  /*
-    브라우저 카메라 API 지원 확인
-  */
-  if (
-    !navigator.mediaDevices ||
-    !navigator.mediaDevices.getUserMedia
-  ) {
-
-    cameraMessage.textContent =
-      "이 브라우저에서는 카메라 기능을 사용할 수 없습니다.";
-
-
-    return;
-
-  }
-
-
-  cameraMessage.textContent =
-    "카메라 권한을 허용해 주세요.";
-
-
-  /*
-    기본 카메라 실행
-  */
-  const cameraResult =
-    await startCamera(
-      videoElement
-    );
-
-
-  if (!cameraResult.success) {
-
-    handleCameraError(
-      cameraResult.error
-    );
-
-
-    return;
-
-  }
-
-
-  /*
-    실제 영상 데이터 준비 대기
-  */
-  await waitForVideoReady();
-
-
-  /*
-    전면/후면에 따른 미리보기 방향 적용
-  */
-  updateCameraPreviewDirection();
-
-
-  cameraMessage.classList.add(
-    "hidden"
-  );
-
-
-  /*
-    카메라 준비 완료 후 촬영/전환 활성화
-  */
-  captureButton.disabled =
-    false;
-
-
-  if (switchCameraButton) {
-
-    switchCameraButton.disabled =
-      false;
-
-  }
-
-}
 
 
 /* ============================================================
@@ -582,7 +548,6 @@ function waitForVideoReady() {
       ) {
 
         resolve();
-
         return;
 
       }
@@ -591,9 +556,7 @@ function waitForVideoReady() {
       videoElement.addEventListener(
         "loadeddata",
         () => {
-
           resolve();
-
         },
         {
           once: true
@@ -714,6 +677,212 @@ function playFlash() {
 
 
 /* ============================================================
+   결과 표시
+   ============================================================ */
+
+function showResult(
+  blob,
+  mediaType
+) {
+
+  if (currentResultUrl) {
+
+    URL.revokeObjectURL(
+      currentResultUrl
+    );
+
+  }
+
+
+  currentResultBlob =
+    blob;
+
+
+  currentResultType =
+    mediaType;
+
+
+  currentResultUrl =
+    URL.createObjectURL(
+      blob
+    );
+
+
+  resultImage.src =
+    currentResultUrl;
+
+
+  resultImage.alt =
+    mediaType === "gif"
+      ? "촬영된 GIF"
+      : "촬영된 PNG 사진";
+
+
+  downloadButton.textContent =
+    mediaType === "gif"
+      ? "GIF 저장"
+      : "PNG 저장";
+
+
+  resultSection.classList.remove(
+    "hidden"
+  );
+
+
+  resultSection.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+
+}
+
+
+/* ============================================================
+   결과 초기화
+   ============================================================ */
+
+function clearResult() {
+
+  resultSection.classList.add(
+    "hidden"
+  );
+
+
+  if (currentResultUrl) {
+
+    URL.revokeObjectURL(
+      currentResultUrl
+    );
+
+
+    currentResultUrl =
+      null;
+
+  }
+
+
+  currentResultBlob =
+    null;
+
+
+  currentResultType =
+    "png";
+
+
+  resultImage.removeAttribute(
+    "src"
+  );
+
+
+  downloadButton.textContent =
+    "PNG 저장";
+
+}
+
+
+/* ============================================================
+   일반 조작 버튼 잠금
+   ============================================================ */
+
+function setStandardControlsDisabled(
+  disabled
+) {
+
+  captureButton.disabled =
+    disabled;
+
+
+  modeSwitchButton.disabled =
+    disabled;
+
+
+  if (switchCameraButton) {
+
+    switchCameraButton.disabled =
+      disabled;
+
+  }
+
+}
+
+
+/* ============================================================
+   초기화
+   ============================================================ */
+
+async function initialize() {
+
+  updateModeUI();
+
+
+  if (
+    !navigator.mediaDevices ||
+    !navigator.mediaDevices.getUserMedia
+  ) {
+
+    cameraMessage.textContent =
+      "이 브라우저에서는 카메라 기능을 사용할 수 없습니다.";
+
+    return;
+
+  }
+
+
+  cameraMessage.textContent =
+    "카메라 권한을 허용해 주세요.";
+
+
+  const cameraResult =
+    await startCamera(
+      videoElement
+    );
+
+
+  if (!cameraResult.success) {
+
+    handleCameraError(
+      cameraResult.error
+    );
+
+    return;
+
+  }
+
+
+  await waitForVideoReady();
+
+
+  updateCameraPreviewDirection();
+
+
+  cameraMessage.classList.add(
+    "hidden"
+  );
+
+
+  captureButton.disabled =
+    false;
+
+
+  if (switchCameraButton) {
+
+    switchCameraButton.disabled =
+      false;
+
+  }
+
+
+  if (gifButton) {
+
+    gifButton.disabled =
+      false;
+
+  }
+
+}
+
+
+/* ============================================================
    카메라 전환
    ============================================================ */
 
@@ -723,12 +892,22 @@ if (switchCameraButton) {
     "click",
     async () => {
 
-      captureButton.disabled =
-        true;
+      if (
+        gifRecording ||
+        gifEncoding
+      ) {
+        return;
+      }
 
 
-      switchCameraButton.disabled =
-        true;
+      setStandardControlsDisabled(
+        true
+      );
+
+
+      if (gifButton) {
+        gifButton.disabled = true;
+      }
 
 
       cameraMessage.textContent =
@@ -799,12 +978,14 @@ if (switchCameraButton) {
 
       finally {
 
-        captureButton.disabled =
-          false;
+        setStandardControlsDisabled(
+          false
+        );
 
 
-        switchCameraButton.disabled =
-          false;
+        if (gifButton) {
+          gifButton.disabled = false;
+        }
 
       }
 
@@ -815,30 +996,29 @@ if (switchCameraButton) {
 
 
 /* ============================================================
-   촬영
+   PNG 촬영
    ============================================================ */
 
 captureButton.addEventListener(
   "click",
   async () => {
 
-    captureButton.disabled =
-      true;
-
-
-    if (switchCameraButton) {
-
-      switchCameraButton.disabled =
-        true;
-
+    if (
+      gifRecording ||
+      gifEncoding
+    ) {
+      return;
     }
 
 
-    /*
-      촬영 처리 중 선택 모드 버튼도 잠시 잠급니다.
-    */
-    modeSwitchButton.disabled =
-      true;
+    setStandardControlsDisabled(
+      true
+    );
+
+
+    if (gifButton) {
+      gifButton.disabled = true;
+    }
 
 
     try {
@@ -846,65 +1026,18 @@ captureButton.addEventListener(
       playFlash();
 
 
-      /*
-        현재 화면에 표시 중인 레이어를 그대로 PNG에 합성합니다.
-        네 모드는 상호 배타적이므로 실제 활성 효과 하나만 반영됩니다.
-      */
       const photoBlob =
         await capturePhoto(
           videoElement,
           captureCanvas,
-          {
-            cameraStageElement:
-              cameraStage,
-            backgroundOverlayElement:
-              backgroundOverlay,
-            characterOverlayElement:
-              characterOverlay,
-            animatedBackgroundOverlayElement:
-              animatedBackgroundOverlay,
-            animatedCharacterOverlayElement:
-              animatedCharacterOverlay,
-            characterTitleOverlayElement:
-              characterTitleOverlay,
-            arOverlayCanvasElement:
-              arOverlayCanvas
-          }
+          captureLayers
         );
 
 
-      if (currentPhotoUrl) {
-
-        URL.revokeObjectURL(
-          currentPhotoUrl
-        );
-
-      }
-
-
-      currentPhotoBlob =
-        photoBlob;
-
-
-      currentPhotoUrl =
-        URL.createObjectURL(
-          photoBlob
-        );
-
-
-      resultImage.src =
-        currentPhotoUrl;
-
-
-      resultSection.classList.remove(
-        "hidden"
+      showResult(
+        photoBlob,
+        "png"
       );
-
-
-      resultSection.scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-      });
 
     }
 
@@ -928,25 +1061,406 @@ captureButton.addEventListener(
 
     finally {
 
-      captureButton.disabled =
-        false;
+      setStandardControlsDisabled(
+        false
+      );
 
 
-      if (switchCameraButton) {
-
-        switchCameraButton.disabled =
-          false;
-
+      if (gifButton) {
+        gifButton.disabled = false;
       }
-
-
-      modeSwitchButton.disabled =
-        false;
 
     }
 
   }
 );
+
+
+/* ============================================================
+   GIF 시간 표시
+   ============================================================ */
+
+function updateGifTimerLoop() {
+
+  if (!gifRecording) {
+    return;
+  }
+
+
+  const maxDuration =
+    CONFIG.gif?.maxDurationMs ||
+    3000;
+
+
+  const elapsed =
+    Math.min(
+      performance.now() -
+      gifStartedAt,
+      maxDuration
+    );
+
+
+  gifTimer.textContent =
+    `${(elapsed / 1000).toFixed(1)}초`;
+
+
+  gifTimerAnimationId =
+    requestAnimationFrame(
+      updateGifTimerLoop
+    );
+
+}
+
+
+/* ============================================================
+   GIF 녹화 시작
+   ============================================================ */
+
+function startGifRecording(event) {
+
+  if (
+    gifButton.disabled ||
+    gifRecording ||
+    gifEncoding
+  ) {
+    return;
+  }
+
+
+  if (event) {
+    event.preventDefault();
+  }
+
+
+  clearResult();
+
+
+  gifRecording =
+    true;
+
+
+  gifStartedAt =
+    performance.now();
+
+
+  gifPointerId =
+    event?.pointerId ??
+    null;
+
+
+  if (
+    event?.pointerId !== undefined &&
+    gifButton.setPointerCapture
+  ) {
+
+    try {
+
+      gifButton.setPointerCapture(
+        event.pointerId
+      );
+
+    }
+    catch (error) {
+      /* 일부 브라우저는 pointer capture를 지원하지 않을 수 있습니다. */
+    }
+
+  }
+
+
+  setStandardControlsDisabled(
+    true
+  );
+
+
+  gifButton.classList.add(
+    "recording"
+  );
+
+
+  gifTimer.textContent =
+    "0.0초";
+
+
+  gifTimer.classList.add(
+    "show"
+  );
+
+
+  gifRecorder.start();
+
+
+  updateGifTimerLoop();
+
+
+  const maxDuration =
+    CONFIG.gif?.maxDurationMs ||
+    3000;
+
+
+  gifAutoStopTimerId =
+    window.setTimeout(
+      () => {
+
+        finishGifRecording();
+
+      },
+      maxDuration
+    );
+
+}
+
+
+/* ============================================================
+   GIF 녹화 종료 / 생성
+   ============================================================ */
+
+async function finishGifRecording(event) {
+
+  if (event) {
+    event.preventDefault();
+  }
+
+
+  if (!gifRecording) {
+    return;
+  }
+
+
+  gifRecording =
+    false;
+
+
+  gifEncoding =
+    true;
+
+
+  const maxDuration =
+    CONFIG.gif?.maxDurationMs ||
+    3000;
+
+
+  const durationMs =
+    Math.max(
+      0,
+      Math.min(
+        performance.now() -
+        gifStartedAt,
+        maxDuration
+      )
+    );
+
+
+  if (gifTimerAnimationId) {
+
+    cancelAnimationFrame(
+      gifTimerAnimationId
+    );
+
+    gifTimerAnimationId =
+      null;
+
+  }
+
+
+  if (gifAutoStopTimerId) {
+
+    clearTimeout(
+      gifAutoStopTimerId
+    );
+
+    gifAutoStopTimerId =
+      null;
+
+  }
+
+
+  gifTimer.textContent =
+    `${(durationMs / 1000).toFixed(1)}초`;
+
+
+  gifButton.classList.remove(
+    "recording"
+  );
+
+
+  gifButton.disabled =
+    true;
+
+
+  cameraMessage.textContent =
+    "GIF를 생성하고 있습니다.";
+
+
+  cameraMessage.classList.remove(
+    "hidden"
+  );
+
+
+  /*
+    사용자가 손을 놓았을 때 최종 시간을 잠깐 보여준 뒤 숨깁니다.
+  */
+  window.setTimeout(
+    () => {
+
+      gifTimer.classList.remove(
+        "show"
+      );
+
+    },
+    250
+  );
+
+
+  try {
+
+    const result =
+      await gifRecorder.stop(
+        durationMs
+      );
+
+
+    if (
+      !result ||
+      !result.blob
+    ) {
+
+      throw new Error(
+        "GIF 생성 결과가 없습니다."
+      );
+
+    }
+
+
+    showResult(
+      result.blob,
+      "gif"
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      "GIF 생성 오류:",
+      error
+    );
+
+
+    alert(
+      "GIF 생성 중 오류가 발생했습니다.\n" +
+      "네트워크 연결 또는 브라우저 상태를 확인한 뒤 다시 시도해 주세요."
+    );
+
+  }
+
+  finally {
+
+    gifEncoding =
+      false;
+
+
+    gifPointerId =
+      null;
+
+
+    cameraMessage.classList.add(
+      "hidden"
+    );
+
+
+    setStandardControlsDisabled(
+      false
+    );
+
+
+    gifButton.disabled =
+      false;
+
+  }
+
+}
+
+
+/* ============================================================
+   GIF 버튼 입력
+
+   누르는 순간 녹화 시작
+   놓는 순간 녹화 종료
+   최대 3초에서 자동 종료
+   ============================================================ */
+
+if (gifButton) {
+
+  gifButton.addEventListener(
+    "pointerdown",
+    startGifRecording
+  );
+
+
+  gifButton.addEventListener(
+    "pointerup",
+    finishGifRecording
+  );
+
+
+  gifButton.addEventListener(
+    "pointercancel",
+    finishGifRecording
+  );
+
+
+  gifButton.addEventListener(
+    "contextmenu",
+    event => {
+      event.preventDefault();
+    }
+  );
+
+
+  /* 키보드 접근성: Space / Enter를 누르고 있는 동안 촬영 */
+  gifButton.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.repeat ||
+        ![
+          " ",
+          "Enter"
+        ].includes(event.key)
+      ) {
+        return;
+      }
+
+      startGifRecording(
+        event
+      );
+
+    }
+  );
+
+
+  gifButton.addEventListener(
+    "keyup",
+    event => {
+
+      if (
+        ![
+          " ",
+          "Enter"
+        ].includes(event.key)
+      ) {
+        return;
+      }
+
+      finishGifRecording(
+        event
+      );
+
+    }
+  );
+
+}
 
 
 /* ============================================================
@@ -957,31 +1471,7 @@ retryButton.addEventListener(
   "click",
   () => {
 
-    resultSection.classList.add(
-      "hidden"
-    );
-
-
-    if (currentPhotoUrl) {
-
-      URL.revokeObjectURL(
-        currentPhotoUrl
-      );
-
-
-      currentPhotoUrl =
-        null;
-
-    }
-
-
-    currentPhotoBlob =
-      null;
-
-
-    resultImage.removeAttribute(
-      "src"
-    );
+    clearResult();
 
 
     window.scrollTo({
@@ -994,28 +1484,124 @@ retryButton.addEventListener(
 
 
 /* ============================================================
-   PNG 저장
+   PNG / GIF 저장
    ============================================================ */
 
 downloadButton.addEventListener(
   "click",
   () => {
 
-    if (!currentPhotoBlob) {
+    if (!currentResultBlob) {
 
       alert(
-        "저장할 사진이 없습니다."
+        "저장할 촬영 결과가 없습니다."
       );
-
 
       return;
 
     }
 
 
-    downloadPhoto(
-      currentPhotoBlob
+    downloadMedia(
+      currentResultBlob,
+      currentResultType
     );
+
+  }
+);
+
+
+/* ============================================================
+   공유
+   ============================================================ */
+
+shareButton.addEventListener(
+  "click",
+  async () => {
+
+    if (!currentResultBlob) {
+
+      alert(
+        "공유할 촬영 결과가 없습니다."
+      );
+
+      return;
+
+    }
+
+
+    shareButton.disabled =
+      true;
+
+
+    try {
+
+      const result =
+        await shareMedia(
+          currentResultBlob,
+          currentResultType
+        );
+
+
+      if (
+        result?.type ===
+        "link"
+      ) {
+
+        backgroundManager.showToast(
+          "이 기기에서는 이미지 파일 대신 사이트 링크를 공유합니다."
+        );
+
+      }
+
+    }
+
+    catch (error) {
+
+      /* 사용자가 공유창을 닫은 경우에는 오류 안내를 하지 않습니다. */
+      if (
+        error?.name ===
+        "AbortError"
+      ) {
+        return;
+      }
+
+
+      if (
+        error?.message ===
+        "SHARE_UNSUPPORTED"
+      ) {
+
+        alert(
+          "현재 브라우저에서는 시스템 공유 기능을 지원하지 않습니다.\n" +
+          "이미지를 먼저 저장한 뒤 원하는 앱에서 공유해 주세요."
+        );
+
+      }
+
+      else {
+
+        console.error(
+          "공유 오류:",
+          error
+        );
+
+
+        alert(
+          "공유 기능을 실행할 수 없습니다.\n" +
+          "이미지를 저장한 뒤 원하는 앱에서 공유해 주세요."
+        );
+
+      }
+
+    }
+
+    finally {
+
+      shareButton.disabled =
+        false;
+
+    }
 
   }
 );

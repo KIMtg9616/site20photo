@@ -49,26 +49,44 @@ export const CONFIG = {
 
 
   /*
-   공지 이미지
+   공지 공개 설정
 
-   실제 공지 이미지를 추가할 때 assets/notices 폴더에 넣고
-   아래 src만 변경/추가하면 됩니다.
+   - guide(체험 안내)는 항상 공개됩니다.
+   - event(이벤트), notice(공지 사항)는 아래 값으로 공개 여부를 선택합니다.
+
+   true  = 공개
+   false = 비공개
+  */
+  noticeVisibility: {
+    event: true,
+    notice: true
+  },
+
+  /*
+   공지 이미지 목록
+
+   guide  : 항상 공개
+   event  : CONFIG.noticeVisibility.event 값으로 공개 여부 결정
+   notice : CONFIG.noticeVisibility.notice 값으로 공개 여부 결정
   */
   notices: [
     {
-      id: "notice-01",
+      id: "guide",
       name: "체험 안내",
-      src: "./assets/notices/notice-01.svg"
+      src: "./assets/notices/guide.png",
+      alwaysVisible: true
     },
     {
-      id: "notice-02",
+      id: "event",
       name: "이벤트",
-      src: "./assets/notices/notice-02.svg"
+      src: "./assets/notices/event.png",
+      visibilityKey: "event"
     },
     {
-      id: "notice-03",
+      id: "notice",
       name: "공지 사항",
-      src: "./assets/notices/notice-03.svg"
+      src: "./assets/notices/notice.png",
+      visibilityKey: "notice"
     }
   ],
 

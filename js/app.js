@@ -838,7 +838,7 @@ function clearResult() {
    일반 조작 버튼 잠금
    ============================================================ */
 
-function setStandardControlsDisabled(
+ function setStandardControlsDisabled(
   disabled
 ) {
 
@@ -853,7 +853,8 @@ function setStandardControlsDisabled(
   if (noticeButton) {
 
     noticeButton.disabled =
-      disabled;
+      disabled ||
+      getNotices().length === 0;
 
   }
 
@@ -1677,13 +1678,47 @@ let currentNoticeIndex =
   0;
 
 
+function isNoticeVisible(
+  notice
+) {
+
+  if (!notice || !notice.src) {
+    return false;
+  }
+
+
+  if (notice.alwaysVisible) {
+    return true;
+  }
+
+
+  if (!notice.visibilityKey) {
+    return true;
+  }
+
+
+  const visibilityConfig =
+    CONFIG.noticeVisibility || {};
+
+
+  return visibilityConfig[notice.visibilityKey] !== false;
+
+}
+
+
 function getNotices() {
 
-  return Array.isArray(
-    CONFIG.notices
-  )
-    ? CONFIG.notices
-    : [];
+  const notices =
+    Array.isArray(
+      CONFIG.notices
+    )
+      ? CONFIG.notices
+      : [];
+
+
+  return notices.filter(
+    isNoticeVisible
+  );
 
 }
 
@@ -1783,6 +1818,11 @@ function openNoticeModal() {
     gifRecording ||
     gifEncoding
   ) {
+    return;
+  }
+
+
+  if (getNotices().length === 0) {
     return;
   }
 

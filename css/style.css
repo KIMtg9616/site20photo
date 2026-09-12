@@ -318,6 +318,49 @@ body {
 
 
 /* =========================================================
+   GIF 녹화 시간 표시
+   ========================================================= */
+
+.gif-timer {
+  position: absolute;
+
+  left: 50%;
+  bottom: 10px;
+
+  transform: translateX(-50%);
+
+  z-index: 8;
+
+  display: none;
+
+  min-width: 58px;
+
+  padding:
+    5px
+    10px;
+
+  border-radius: 999px;
+
+  background:
+    rgba(17, 24, 39, 0.78);
+
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+
+  text-align: center;
+
+  pointer-events: none;
+}
+
+.gif-timer.show {
+  display: block;
+}
+
+
+/* =========================================================
    카메라 안내
    ========================================================= */
 
@@ -606,7 +649,7 @@ body {
 
 
 /* =========================================================
-   촬영 / 모드 전환 / 카메라 전환
+   촬영 / 모드 전환 / 카메라 전환 / GIF
    ========================================================= */
 
 .capture-section {
@@ -619,25 +662,25 @@ body {
 }
 
 /*
-  왼쪽: 기능 모드 버튼
-  가운데: 촬영 버튼
-  오른쪽: 카메라 전환 버튼
+  왼쪽 영역과 오른쪽 영역의 폭을 동일하게 두어
+  촬영 버튼이 화면 정중앙에 유지되도록 합니다.
 
-  양쪽 버튼의 폭을 같게 하여
-  촬영 버튼은 계속 화면 중앙에 유지합니다.
+  왼쪽: 기능 모드 버튼 1개
+  가운데: 촬영 버튼
+  오른쪽: 카메라 전환 + GIF 버튼
 */
 .capture-controls {
   display: grid;
 
   grid-template-columns:
-    58px
+    124px
     76px
-    58px;
+    124px;
 
   justify-content: center;
   align-items: start;
 
-  column-gap: 18px;
+  column-gap: 14px;
 }
 
 
@@ -646,7 +689,8 @@ body {
    ========================================================= */
 
 .mode-switch-control,
-.camera-switch-control {
+.camera-switch-control,
+.gif-control {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -654,8 +698,23 @@ body {
   padding-top: 9px;
 }
 
+/* 왼쪽 124px 영역에서 모드 버튼은 가운데 정렬 */
+.mode-switch-control {
+  justify-self: center;
+}
+
+/* 오른쪽에 전환/GIF 두 버튼을 나란히 배치 */
+.right-capture-controls {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+
+  gap: 8px;
+}
+
 .mode-switch-button,
-.camera-switch-button {
+.camera-switch-button,
+.gif-button {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -685,14 +744,16 @@ body {
 }
 
 .mode-switch-button:not(:disabled):active,
-.camera-switch-button:not(:disabled):active {
+.camera-switch-button:not(:disabled):active,
+.gif-button:not(:disabled):active {
   transform: scale(0.92);
 
   background: #f3f4f6;
 }
 
 .mode-switch-button:focus-visible,
-.camera-switch-button:focus-visible {
+.camera-switch-button:focus-visible,
+.gif-button:focus-visible {
   outline:
     3px
     solid
@@ -701,12 +762,32 @@ body {
   outline-offset: 2px;
 }
 
-.camera-switch-button:disabled {
+.mode-switch-button:disabled,
+.camera-switch-button:disabled,
+.gif-button:disabled {
   opacity: 0.35;
 
   cursor: not-allowed;
 }
 
+/* GIF는 길게 누르므로 브라우저 기본 제스처를 막습니다. */
+.gif-button {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.gif-button.recording {
+  border-color: #ef4444;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.gif-button-text {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+}
 
 /* 기능 모드 아이콘 */
 
@@ -738,7 +819,8 @@ body {
 /* 기능 모드 텍스트 */
 
 .mode-switch-label,
-.camera-switch-label {
+.camera-switch-label,
+.gif-label {
   margin:
     7px
     0
@@ -906,22 +988,24 @@ body {
 
   grid-template-columns:
     1fr
+    1fr
     1fr;
 
-  gap: 10px;
+  gap: 8px;
 
   margin-top: 14px;
 }
 
 .primary-button,
-.secondary-button {
+.secondary-button,
+.share-button {
   min-height: 50px;
 
   border-radius: 13px;
 
   font-family: inherit;
 
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 700;
 
   cursor: pointer;
@@ -946,10 +1030,39 @@ body {
   color: #1f2937;
 }
 
+.share-button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  gap: 6px;
+
+  border:
+    1px
+    solid
+    #cbd5e1;
+
+  background: #f8fafc;
+  color: #1f2937;
+}
+
+.share-icon {
+  width: 19px;
+  height: 19px;
+
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .primary-button:active,
-.secondary-button:active {
+.secondary-button:active,
+.share-button:active {
   transform: scale(0.98);
 }
+
 
 
 /* =========================================================
@@ -1079,11 +1192,11 @@ body {
 
   .capture-controls {
     grid-template-columns:
-      54px
+      112px
       70px
-      54px;
+      112px;
 
-    column-gap: 15px;
+    column-gap: 8px;
   }
 
   .capture-button {
@@ -1097,9 +1210,10 @@ body {
   }
 
   .mode-switch-button,
-  .camera-switch-button {
-    width: 54px;
-    height: 54px;
+  .camera-switch-button,
+  .gif-button {
+    width: 52px;
+    height: 52px;
   }
 
   .mode-switch-icon,
@@ -1110,10 +1224,28 @@ body {
   }
 
   .mode-switch-label,
-  .camera-switch-label {
-    min-width: 54px;
+  .camera-switch-label,
+  .gif-label {
+    min-width: 52px;
 
-    font-size: 12px;
+    font-size: 11px;
+  }
+
+  .right-capture-controls {
+    gap: 6px;
+  }
+
+  .result-buttons {
+    gap: 6px;
+  }
+
+  .primary-button,
+  .secondary-button,
+  .share-button {
+    min-height: 48px;
+    padding-left: 6px;
+    padding-right: 6px;
+    font-size: 13px;
   }
 
   .background-toast {

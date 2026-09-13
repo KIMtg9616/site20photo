@@ -120,7 +120,7 @@ export const CONFIG = {
     {
       id: "notice",
       name: "공지 사항",
-      src: "./assets/notices/notice.jpg",
+      src: "./assets/notices/notice0.jpg",
       visibilityKey: "notice"
     }
   ],

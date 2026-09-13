@@ -18,7 +18,8 @@ export class ARTracker {
   constructor(
     videoElement,
     stageElement,
-    canvasElement
+    canvasElement,
+    onFaceCountChange = null
   ) {
 
     this.videoElement =
@@ -56,6 +57,24 @@ export class ARTracker {
 
     this.effectRequestId =
       0;
+
+    /*
+      행사 환경에서 모바일 성능과 다인 촬영을 고려해
+      최대 3명까지 얼굴을 추적합니다.
+    */
+    this.maxFaces =
+      3;
+
+    this.lastFaceCount =
+      -1;
+
+    this.faceCountActive =
+      false;
+
+    this.onFaceCountChange =
+      typeof onFaceCountChange === "function"
+        ? onFaceCountChange
+        : null;
 
   }
 
@@ -118,12 +137,56 @@ export class ARTracker {
             delegate: "GPU"
           },
           runningMode: "VIDEO",
-          numFaces: 3,
+          numFaces: this.maxFaces,
           minFaceDetectionConfidence: 0.5,
           minFacePresenceConfidence: 0.5,
           minTrackingConfidence: 0.5
         }
       );
+
+  }
+
+
+  /* ========================================================
+     얼굴 인식 인원 안내
+     ======================================================== */
+
+  notifyFaceCount(
+    count,
+    active = true
+  ) {
+
+    const safeCount =
+      Math.max(
+        0,
+        Math.min(
+          Number(count) || 0,
+          this.maxFaces
+        )
+      );
+
+    if (
+      safeCount === this.lastFaceCount &&
+      active === this.faceCountActive
+    ) {
+      return;
+    }
+
+    this.lastFaceCount =
+      safeCount;
+
+    this.faceCountActive =
+      active;
+
+    if (this.onFaceCountChange) {
+
+      this.onFaceCountChange({
+        count: safeCount,
+        maxFaces: this.maxFaces,
+        active
+      });
+
+    }
 
   }
 
@@ -209,6 +272,11 @@ export class ARTracker {
     this.running =
       true;
 
+    this.notifyFaceCount(
+      0,
+      true
+    );
+
     this.lastVideoTime =
       -1;
 
@@ -245,6 +313,11 @@ export class ARTracker {
         null;
 
     }
+
+    this.notifyFaceCount(
+      0,
+      false
+    );
 
     this.clearCanvas();
 
@@ -394,10 +467,19 @@ export class ARTracker {
 
     this.clearCanvas();
 
-    if (
-      !result.faceLandmarks ||
-      result.faceLandmarks.length === 0
-    ) {
+    const faceLandmarks =
+      Array.isArray(
+        result.faceLandmarks
+      )
+        ? result.faceLandmarks
+        : [];
+
+    this.notifyFaceCount(
+      faceLandmarks.length,
+      true
+    );
+
+    if (faceLandmarks.length === 0) {
       return;
     }
 
@@ -409,7 +491,7 @@ export class ARTracker {
     */
     for (
       const landmarks
-      of result.faceLandmarks
+      of faceLandmarks
     ) {
 
       this.drawEffect(

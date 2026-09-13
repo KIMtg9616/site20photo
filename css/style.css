@@ -318,6 +318,54 @@ body {
 
 
 /* =========================================================
+   AR 얼굴 인식 인원 안내
+   ========================================================= */
+
+.ar-face-count {
+  position: absolute;
+
+  top: 10px;
+  right: 10px;
+
+  z-index: 8;
+
+  display: none;
+
+  min-width: 86px;
+
+  padding:
+    6px
+    10px;
+
+  border-radius: 999px;
+
+  background:
+    rgba(17, 24, 39, 0.78);
+
+  color: #ffffff;
+
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+
+  text-align: center;
+
+  pointer-events: none;
+
+  user-select: none;
+}
+
+.ar-face-count.show {
+  display: block;
+}
+
+.ar-face-count.limit {
+  background:
+    rgba(37, 99, 235, 0.88);
+}
+
+
+/* =========================================================
    GIF 녹화 시간 표시
    ========================================================= */
 

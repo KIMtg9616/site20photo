@@ -11,6 +11,7 @@
    5. GIF 버튼을 누르고 있는 시간만큼 GIF 촬영 (최대 3초)
    6. PNG / GIF 저장
    7. 시스템 공유창을 통한 이미지 공유
+   8. AR 얼굴 인식 인원 안내 (최대 3명)
    ============================================================ */
 
 
@@ -103,6 +104,12 @@ const characterTitleOverlay =
 const arOverlayCanvas =
   document.getElementById(
     "arOverlayCanvas"
+  );
+
+
+const arFaceCount =
+  document.getElementById(
+    "arFaceCount"
   );
 
 
@@ -294,7 +301,46 @@ const arTracker =
   new ARTracker(
     videoElement,
     cameraStage,
-    arOverlayCanvas
+    arOverlayCanvas,
+    ({
+      count,
+      maxFaces,
+      active
+    }) => {
+
+      if (!arFaceCount) {
+        return;
+      }
+
+
+      if (!active) {
+
+        arFaceCount.classList.remove(
+          "show",
+          "limit"
+        );
+
+        arFaceCount.textContent =
+          `얼굴 0/${maxFaces}명`;
+
+        return;
+
+      }
+
+
+      arFaceCount.textContent =
+        `얼굴 ${count}/${maxFaces}명`;
+
+      arFaceCount.classList.add(
+        "show"
+      );
+
+      arFaceCount.classList.toggle(
+        "limit",
+        count >= maxFaces
+      );
+
+    }
   );
 
 

@@ -58,7 +58,7 @@ export const CONFIG = {
    false = 비공개
   */
   noticeVisibility: {
-    event: true,
+    event: false,
     notice: true
   },
 

@@ -83,19 +83,19 @@ export const CONFIG = {
     {
       id: "guide",
       name: "체험 안내",
-      src: "./assets/notices/guide.png",
+      src: "./assets/notices/guide.jpg",
       alwaysVisible: true
     },
     {
       id: "event",
       name: "이벤트",
-      src: "./assets/notices/event.png",
+      src: "./assets/notices/event.jpg",
       visibilityKey: "event"
     },
     {
       id: "notice",
       name: "공지 사항",
-      src: "./assets/notices/notice.png",
+      src: "./assets/notices/notice.jpg",
       visibilityKey: "notice"
     }
   ],

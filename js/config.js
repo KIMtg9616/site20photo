@@ -73,6 +73,31 @@ export const CONFIG = {
   noticeAutoOpen: true,
 
   /*
+   공지 모달 표시 순서
+
+   아래 배열에 공지 id를 원하는 순서대로 작성하면 됩니다.
+
+   사용 가능한 id:
+   - "event"  = 이벤트
+   - "notice" = 공지 사항
+   - "guide"  = 체험 안내
+
+   예시 1) 이벤트 → 공지 사항 → 체험 안내
+   noticeOrder: ["event", "notice", "guide"]
+
+   예시 2) 체험 안내 → 이벤트 → 공지 사항
+   noticeOrder: ["guide", "event", "notice"]
+
+   공개 여부가 false인 항목은 순서 배열에 있어도 자동으로 제외됩니다.
+   체험 안내(guide)는 항상 공개됩니다.
+  */
+  noticeOrder: [
+    "event",
+    "notice",
+    "guide"
+  ],
+
+  /*
    공지 이미지 목록
 
    guide  : 항상 공개

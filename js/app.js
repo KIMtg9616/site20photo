@@ -984,8 +984,8 @@ async function initialize() {
   if (shouldAutoOpenNotice) {
 
     /*
+      config.js의 noticeOrder 기준으로 정렬된
       첫 번째 공개 공지부터 시작합니다.
-      현재 설정에서는 체험 안내가 항상 첫 번째입니다.
     */
     currentNoticeIndex =
       0;
@@ -1779,8 +1779,104 @@ function getNotices() {
       : [];
 
 
-  return notices.filter(
-    isNoticeVisible
+  /*
+    1. 먼저 공개 상태인 공지만 남깁니다.
+
+    - 체험 안내(alwaysVisible)는 항상 포함
+    - 이벤트/공지 사항은 noticeVisibility 설정 적용
+  */
+  const visibleNotices =
+    notices.filter(
+      isNoticeVisible
+    );
+
+
+  /*
+    2. config.js의 noticeOrder에 따라 표시 순서를 정합니다.
+
+    예:
+    ["event", "notice", "guide"]
+    → 이벤트 → 공지 사항 → 체험 안내
+
+    noticeOrder에 없는 항목이 나중에 추가되더라도
+    삭제하지 않고 기존 notices 배열 순서대로 뒤에 붙입니다.
+  */
+  const noticeOrder =
+    Array.isArray(
+      CONFIG.noticeOrder
+    )
+      ? CONFIG.noticeOrder
+      : [];
+
+
+  const orderMap =
+    new Map(
+      noticeOrder.map(
+        (id, index) => [
+          id,
+          index
+        ]
+      )
+    );
+
+
+  const originalOrderMap =
+    new Map(
+      notices.map(
+        (notice, index) => [
+          notice.id,
+          index
+        ]
+      )
+    );
+
+
+  return [
+    ...visibleNotices
+  ].sort(
+    (a, b) => {
+
+      const aHasOrder =
+        orderMap.has(
+          a.id
+        );
+
+
+      const bHasOrder =
+        orderMap.has(
+          b.id
+        );
+
+
+      if (
+        aHasOrder &&
+        bHasOrder
+      ) {
+
+        return (
+          orderMap.get(a.id) -
+          orderMap.get(b.id)
+        );
+
+      }
+
+
+      if (aHasOrder) {
+        return -1;
+      }
+
+
+      if (bHasOrder) {
+        return 1;
+      }
+
+
+      return (
+        (originalOrderMap.get(a.id) ?? 0) -
+        (originalOrderMap.get(b.id) ?? 0)
+      );
+
+    }
   );
 
 }

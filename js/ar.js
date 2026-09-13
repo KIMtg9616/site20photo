@@ -118,7 +118,7 @@ export class ARTracker {
             delegate: "GPU"
           },
           runningMode: "VIDEO",
-          numFaces: 1,
+          numFaces: 3,
           minFaceDetectionConfidence: 0.5,
           minFacePresenceConfidence: 0.5,
           minTrackingConfidence: 0.5
@@ -401,12 +401,22 @@ export class ARTracker {
       return;
     }
 
-    const landmarks =
-      result.faceLandmarks[0];
+    /*
+      검출된 얼굴 각각에 동일한 AR 효과를 적용합니다.
 
-    this.drawEffect(
-      landmarks
-    );
+      Face Landmarker의 numFaces가 3이므로
+      최대 3명의 얼굴에 동시에 효과가 표시됩니다.
+    */
+    for (
+      const landmarks
+      of result.faceLandmarks
+    ) {
+
+      this.drawEffect(
+        landmarks
+      );
+
+    }
 
   }
 

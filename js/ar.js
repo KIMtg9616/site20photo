@@ -10,7 +10,10 @@ import {
 
  - AR 모드를 실제로 선택했을 때만 MediaPipe를 지연 로딩합니다.
  - 선택하지 않으면 모델/wasm 데이터를 내려받지 않습니다.
- - AR 결과는 camera-stage 위의 Canvas에 그립니다.
+ - 최대 3명의 얼굴을 동시에 추적합니다.
+ - 얼굴 위치/크기/회전값을 보간해 AR 떨림을 줄입니다.
+ - 얼굴을 순간적으로 놓쳐도 약 0.26초 동안 마지막 AR 위치를 유지합니다.
+ - 화면 회전/크기 변경 시 Canvas와 추적 좌표를 다시 맞춥니다.
 */
 
 export class ARTracker {
@@ -58,12 +61,35 @@ export class ARTracker {
     this.effectRequestId =
       0;
 
-    /*
-      행사 환경에서 모바일 성능과 다인 촬영을 고려해
-      최대 3명까지 얼굴을 추적합니다.
-    */
+    /* 최대 동시 얼굴 수 */
     this.maxFaces =
       3;
+
+    /*
+      흔들림 완화 계수
+
+      값이 작을수록 더 부드럽지만 반응이 느려지고,
+      값이 클수록 얼굴 움직임을 빠르게 따라갑니다.
+    */
+    this.positionSmoothing =
+      0.38;
+
+    this.sizeSmoothing =
+      0.32;
+
+    this.angleSmoothing =
+      0.30;
+
+    /* 순간적인 얼굴 검출 실패 시 마지막 위치 유지 시간 */
+    this.trackingHoldMs =
+      260;
+
+    /* 여러 얼굴을 프레임 사이에서 이어 붙이기 위한 상태 */
+    this.faceTracks =
+      [];
+
+    this.nextTrackId =
+      1;
 
     this.lastFaceCount =
       -1;
@@ -264,6 +290,8 @@ export class ARTracker {
     this.effectImage =
       loadedImage;
 
+    this.resetTrackingState();
+
     this.resizeCanvas();
 
     this.canvasElement.style.display =
@@ -314,6 +342,8 @@ export class ARTracker {
 
     }
 
+    this.resetTrackingState();
+
     this.notifyFaceCount(
       0,
       false
@@ -328,6 +358,47 @@ export class ARTracker {
 
 
   /* ========================================================
+     추적 상태 초기화
+     ======================================================== */
+
+  resetTrackingState() {
+
+    this.faceTracks =
+      [];
+
+    this.nextTrackId =
+      1;
+
+  }
+
+
+  /* ========================================================
+     화면 회전 / 크기 변경 대응
+     ======================================================== */
+
+  refreshLayout(
+    forceReset = false
+  ) {
+
+    const changed =
+      this.resizeCanvas();
+
+    if (
+      changed ||
+      forceReset
+    ) {
+
+      this.resetTrackingState();
+
+    }
+
+    this.lastVideoTime =
+      -1;
+
+  }
+
+
+  /* ========================================================
      Canvas 크기 조절
      ======================================================== */
 
@@ -337,8 +408,7 @@ export class ARTracker {
       this.stageElement.getBoundingClientRect();
 
     /*
-      AR Canvas가 너무 커져 모바일 GPU 부담이 커지는 것을 막기 위해
-      DPR은 최대 2까지만 사용합니다.
+      모바일 GPU 부담을 줄이기 위해 DPR은 최대 2까지만 사용합니다.
     */
     const dpr =
       Math.min(
@@ -362,10 +432,11 @@ export class ARTracker {
         )
       );
 
-    if (
+    const changed =
       this.canvasElement.width !== width ||
-      this.canvasElement.height !== height
-    ) {
+      this.canvasElement.height !== height;
+
+    if (changed) {
 
       this.canvasElement.width =
         width;
@@ -374,6 +445,8 @@ export class ARTracker {
         height;
 
     }
+
+    return changed;
 
   }
 
@@ -444,9 +517,7 @@ export class ARTracker {
 
     }
 
-    /*
-      같은 비디오 프레임을 반복 분석하지 않습니다.
-    */
+    /* 같은 비디오 프레임을 반복 분석하지 않습니다. */
     if (
       this.videoElement.currentTime ===
       this.lastVideoTime
@@ -457,45 +528,65 @@ export class ARTracker {
     this.lastVideoTime =
       this.videoElement.currentTime;
 
-    this.resizeCanvas();
+    const canvasChanged =
+      this.resizeCanvas();
+
+    if (canvasChanged) {
+      this.resetTrackingState();
+    }
+
+    const now =
+      performance.now();
 
     const result =
       this.faceLandmarker.detectForVideo(
         this.videoElement,
-        performance.now()
+        now
       );
-
-    this.clearCanvas();
 
     const faceLandmarks =
       Array.isArray(
         result.faceLandmarks
       )
-        ? result.faceLandmarks
+        ? result.faceLandmarks.slice(
+            0,
+            this.maxFaces
+          )
         : [];
 
+    /*
+      얼굴 인원 표시는 실제 현재 검출 수를 사용합니다.
+      AR 이미지 자체는 잠깐 검출이 끊겨도 trackingHoldMs 동안 유지됩니다.
+    */
     this.notifyFaceCount(
       faceLandmarks.length,
       true
     );
 
-    if (faceLandmarks.length === 0) {
-      return;
-    }
+    const rawTransforms =
+      faceLandmarks
+        .map(
+          landmarks =>
+            this.calculateEffectTransform(
+              landmarks
+            )
+        )
+        .filter(Boolean);
 
-    /*
-      검출된 얼굴 각각에 동일한 AR 효과를 적용합니다.
+    this.updateFaceTracks(
+      rawTransforms,
+      now
+    );
 
-      Face Landmarker의 numFaces가 3이므로
-      최대 3명의 얼굴에 동시에 효과가 표시됩니다.
-    */
+    this.clearCanvas();
+
     for (
-      const landmarks
-      of faceLandmarks
+      const track
+      of this.faceTracks
     ) {
 
-      this.drawEffect(
-        landmarks
+      this.drawTrack(
+        track
       );
 
     }
@@ -523,7 +614,8 @@ export class ARTracker {
 
     if (
       !videoWidth ||
-      !videoHeight
+      !videoHeight ||
+      !landmark
     ) {
 
       return {
@@ -533,9 +625,7 @@ export class ARTracker {
 
     }
 
-    /*
-      CSS의 object-fit: cover와 같은 계산입니다.
-    */
+    /* CSS object-fit: cover와 같은 계산 */
     const scale =
       Math.max(
         stageWidth / videoWidth,
@@ -574,10 +664,7 @@ export class ARTracker {
         renderedHeight
       );
 
-    /*
-      전면 카메라는 화면에서 좌우 반전되어 있으므로
-      AR 좌표도 동일하게 반전합니다.
-    */
+    /* 전면 카메라 화면 미러링에 맞춰 AR 좌표도 반전 */
     if (
       getCurrentFacingMode() ===
       "user"
@@ -597,10 +684,12 @@ export class ARTracker {
 
 
   /* ========================================================
-     AR 그림 배치
+     얼굴 랜드마크 → AR 배치값 계산
      ======================================================== */
 
-  drawEffect(landmarks) {
+  calculateEffectTransform(
+    landmarks
+  ) {
 
     const effect =
       this.selectedEffect;
@@ -610,19 +699,13 @@ export class ARTracker {
 
     if (
       !effect ||
-      !image
+      !image ||
+      !landmarks ||
+      landmarks.length < 455
     ) {
-      return;
+      return null;
     }
 
-    /*
-      주요 얼굴 랜드마크
-
-      33 / 263 : 양쪽 눈 바깥쪽
-      234 / 454: 양쪽 볼/얼굴 측면
-      10       : 이마 위쪽
-      152      : 턱 아래쪽
-    */
     const eyeA =
       this.landmarkToCanvas(
         landmarks[33]
@@ -671,10 +754,23 @@ export class ARTracker {
         chin.y - forehead.y
       );
 
-    const centerX =
+    if (
+      !Number.isFinite(faceWidth) ||
+      faceWidth <= 0
+    ) {
+      return null;
+    }
+
+    const faceCenterX =
       (
         cheekA.x +
         cheekB.x
+      ) / 2;
+
+    const faceCenterY =
+      (
+        forehead.y +
+        chin.y
       ) / 2;
 
     const eyeCenterX =
@@ -689,18 +785,14 @@ export class ARTracker {
         eyeB.y
       ) / 2;
 
-    /*
-      전면 카메라에서는 landmark x 좌표를 이미 좌우 반전했기 때문에
-      눈 A→B 방향을 그대로 사용하면 각도가 약 180도 뒤집혀
-      AR 이미지가 거꾸로 보일 수 있습니다.
-
-      전면 카메라는 반대 방향 벡터(B→A)를 사용해
-      화면의 미러링과 같은 기울기만 유지합니다.
-    */
     const isFrontCamera =
       getCurrentFacingMode() ===
       "user";
 
+    /*
+      전면 카메라는 landmark x 좌표가 이미 좌우 반전되므로
+      반대 방향 벡터(B→A)를 사용해 AR 이미지의 회전을 바로잡습니다.
+    */
     const angle =
       isFrontCamera
         ? Math.atan2(
@@ -721,10 +813,6 @@ export class ARTracker {
     let x;
     let y;
 
-
-    /* --------------------------------------------------------
-       안경
-       -------------------------------------------------------- */
     if (
       effect.arKind ===
       "glasses"
@@ -751,10 +839,6 @@ export class ARTracker {
 
     }
 
-
-    /* --------------------------------------------------------
-       왕관
-       -------------------------------------------------------- */
     else if (
       effect.arKind ===
       "crown"
@@ -771,7 +855,7 @@ export class ARTracker {
         width * aspect;
 
       x =
-        centerX;
+        faceCenterX;
 
       y =
         forehead.y -
@@ -781,10 +865,6 @@ export class ARTracker {
 
     }
 
-
-    /* --------------------------------------------------------
-       머리띠
-       -------------------------------------------------------- */
     else {
 
       width =
@@ -798,7 +878,7 @@ export class ARTracker {
         width * aspect;
 
       x =
-        centerX;
+        faceCenterX;
 
       y =
         forehead.y +
@@ -808,24 +888,305 @@ export class ARTracker {
 
     }
 
+    return {
+      x,
+      y,
+      width,
+      height,
+      angle,
+      faceCenterX,
+      faceCenterY,
+      faceWidth
+    };
+
+  }
+
+
+  /* ========================================================
+     보간 유틸리티
+     ======================================================== */
+
+  lerp(
+    previous,
+    next,
+    amount
+  ) {
+
+    return (
+      previous +
+      (
+        next - previous
+      ) * amount
+    );
+
+  }
+
+
+  lerpAngle(
+    previous,
+    next,
+    amount
+  ) {
+
+    let delta =
+      next - previous;
+
+    while (delta > Math.PI) {
+      delta -= Math.PI * 2;
+    }
+
+    while (delta < -Math.PI) {
+      delta += Math.PI * 2;
+    }
+
+    return (
+      previous +
+      delta * amount
+    );
+
+  }
+
+
+  smoothTrack(
+    track,
+    raw,
+    now
+  ) {
+
+    return {
+      ...track,
+
+      x:
+        this.lerp(
+          track.x,
+          raw.x,
+          this.positionSmoothing
+        ),
+
+      y:
+        this.lerp(
+          track.y,
+          raw.y,
+          this.positionSmoothing
+        ),
+
+      width:
+        this.lerp(
+          track.width,
+          raw.width,
+          this.sizeSmoothing
+        ),
+
+      height:
+        this.lerp(
+          track.height,
+          raw.height,
+          this.sizeSmoothing
+        ),
+
+      angle:
+        this.lerpAngle(
+          track.angle,
+          raw.angle,
+          this.angleSmoothing
+        ),
+
+      faceCenterX:
+        this.lerp(
+          track.faceCenterX,
+          raw.faceCenterX,
+          this.positionSmoothing
+        ),
+
+      faceCenterY:
+        this.lerp(
+          track.faceCenterY,
+          raw.faceCenterY,
+          this.positionSmoothing
+        ),
+
+      faceWidth:
+        this.lerp(
+          track.faceWidth,
+          raw.faceWidth,
+          this.sizeSmoothing
+        ),
+
+      lastSeenAt:
+        now
+    };
+
+  }
+
+
+  /* ========================================================
+     3명 얼굴 트랙 유지 + 순간 끊김 보정
+     ======================================================== */
+
+  updateFaceTracks(
+    rawTransforms,
+    now
+  ) {
+
+    const previousTracks =
+      this.faceTracks.filter(
+        track =>
+          (
+            now -
+            track.lastSeenAt
+          ) <= this.trackingHoldMs
+      );
+
+    const usedTrackIds =
+      new Set();
+
+    const detectedTracks =
+      [];
+
+    for (
+      const raw
+      of rawTransforms
+    ) {
+
+      let bestTrack =
+        null;
+
+      let bestDistance =
+        Infinity;
+
+      for (
+        const track
+        of previousTracks
+      ) {
+
+        if (
+          usedTrackIds.has(
+            track.id
+          )
+        ) {
+          continue;
+        }
+
+        const distance =
+          Math.hypot(
+            raw.faceCenterX -
+              track.faceCenterX,
+            raw.faceCenterY -
+              track.faceCenterY
+          );
+
+        const matchDistance =
+          Math.max(
+            raw.faceWidth * 1.8,
+            this.canvasElement.width * 0.18
+          );
+
+        if (
+          distance < bestDistance &&
+          distance <= matchDistance
+        ) {
+
+          bestDistance =
+            distance;
+
+          bestTrack =
+            track;
+
+        }
+
+      }
+
+      if (bestTrack) {
+
+        usedTrackIds.add(
+          bestTrack.id
+        );
+
+        detectedTracks.push(
+          this.smoothTrack(
+            bestTrack,
+            raw,
+            now
+          )
+        );
+
+      }
+
+      else {
+
+        detectedTracks.push({
+          id:
+            this.nextTrackId++,
+          ...raw,
+          lastSeenAt:
+            now
+        });
+
+      }
+
+    }
+
+    /*
+      이번 프레임에서 잠깐 사라진 얼굴은 0.26초까지
+      마지막 위치를 그대로 유지합니다.
+    */
+    const heldTracks =
+      previousTracks.filter(
+        track =>
+          !usedTrackIds.has(
+            track.id
+          )
+      );
+
+    this.faceTracks =
+      [
+        ...detectedTracks,
+        ...heldTracks
+      ].slice(
+        0,
+        this.maxFaces
+      );
+
+  }
+
+
+  /* ========================================================
+     보간된 AR 효과 그리기
+     ======================================================== */
+
+  drawTrack(track) {
+
+    const image =
+      this.effectImage;
+
+    if (
+      !image ||
+      !track ||
+      !Number.isFinite(track.x) ||
+      !Number.isFinite(track.y) ||
+      !Number.isFinite(track.width) ||
+      !Number.isFinite(track.height)
+    ) {
+      return;
+    }
 
     this.context.save();
 
     this.context.translate(
-      x,
-      y
+      track.x,
+      track.y
     );
 
     this.context.rotate(
-      angle
+      track.angle
     );
 
     this.context.drawImage(
       image,
-      -width / 2,
-      -height / 2,
-      width,
-      height
+      -track.width / 2,
+      -track.height / 2,
+      track.width,
+      track.height
     );
 
     this.context.restore();

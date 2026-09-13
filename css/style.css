@@ -1591,3 +1591,358 @@ body.modal-open {
   }
 
 }
+
+
+/* =========================================================
+   가로 화면 지원
+   ---------------------------------------------------------
+   app.js가 화면 방향을 감지해 html에 is-landscape 클래스를
+   붙입니다. 스마트폰을 가로로 돌리면 카메라는 왼쪽,
+   선택/촬영 조작은 오른쪽에 배치됩니다.
+   ========================================================= */
+
+@media (min-width: 540px) {
+
+  html.is-landscape body {
+    padding: 0;
+    overflow-x: hidden;
+  }
+
+  html.is-landscape .app {
+    max-width: 1180px;
+
+    min-height: 100vh;
+    min-height: 100dvh;
+
+    display: grid;
+
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(248px, 0.62fr);
+
+    grid-template-areas:
+      "header header"
+      "camera selector"
+      "camera capture"
+      "result result";
+
+    column-gap: 14px;
+    row-gap: 0;
+
+    align-content: start;
+
+    padding:
+      calc(6px + env(safe-area-inset-top))
+      calc(10px + env(safe-area-inset-right))
+      calc(10px + env(safe-area-inset-bottom))
+      calc(10px + env(safe-area-inset-left));
+
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  html.is-landscape .top-header {
+    grid-area: header;
+
+    padding:
+      0
+      0
+      6px;
+  }
+
+  html.is-landscape .main-logo {
+    width: min(52%, 390px);
+    max-width: 390px;
+    height: 42px;
+  }
+
+  html.is-landscape .camera-section {
+    grid-area: camera;
+
+    min-width: 0;
+
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+  html.is-landscape .camera-stage {
+    width: min(100%, 54vw);
+
+    margin: 0 auto;
+
+    border-radius: 16px;
+  }
+
+  html.is-landscape .selector-section {
+    grid-area: selector;
+
+    min-width: 0;
+
+    padding-top: 0;
+  }
+
+  html.is-landscape .selector-title {
+    margin:
+      0
+      0
+      8px;
+
+    font-size: 14px;
+  }
+
+  html.is-landscape .background-list {
+    gap: 7px;
+
+    padding:
+      2px
+      2px
+      7px;
+  }
+
+  html.is-landscape .background-item {
+    flex:
+      0
+      0
+      86px;
+
+    width: 86px;
+    height: 65px;
+
+    min-width: 86px;
+    max-width: 86px;
+
+    min-height: 65px;
+    max-height: 65px;
+
+    border-radius: 12px;
+  }
+
+  html.is-landscape .selector-empty {
+    min-height: 65px;
+
+    padding:
+      10px
+      12px;
+
+    font-size: 12px;
+  }
+
+  html.is-landscape .capture-section {
+    grid-area: capture;
+
+    align-self: start;
+
+    padding:
+      8px
+      0
+      0;
+  }
+
+  html.is-landscape .capture-controls {
+    grid-template-columns:
+      92px
+      58px
+      92px;
+
+    column-gap: 3px;
+  }
+
+  html.is-landscape .left-capture-controls,
+  html.is-landscape .right-capture-controls {
+    gap: 4px;
+  }
+
+  html.is-landscape .notice-control,
+  html.is-landscape .mode-switch-control,
+  html.is-landscape .camera-switch-control,
+  html.is-landscape .gif-control {
+    padding-top: 6px;
+  }
+
+  html.is-landscape .notice-button,
+  html.is-landscape .mode-switch-button,
+  html.is-landscape .camera-switch-button,
+  html.is-landscape .gif-button {
+    width: 44px;
+    height: 44px;
+
+    border-width: 1.5px;
+  }
+
+  html.is-landscape .notice-icon,
+  html.is-landscape .mode-switch-icon,
+  html.is-landscape .mode-switch-icon svg,
+  html.is-landscape .camera-switch-icon {
+    width: 24px;
+    height: 24px;
+  }
+
+  html.is-landscape .gif-button-text {
+    font-size: 11px;
+  }
+
+  html.is-landscape .notice-label,
+  html.is-landscape .mode-switch-label,
+  html.is-landscape .camera-switch-label,
+  html.is-landscape .gif-label {
+    min-width: 44px;
+
+    margin-top: 4px;
+
+    font-size: 10px;
+  }
+
+  html.is-landscape .capture-button {
+    width: 58px;
+    height: 58px;
+
+    padding: 4px;
+
+    border-width: 3px;
+  }
+
+  html.is-landscape .capture-button-inner {
+    width: 44px;
+    height: 44px;
+  }
+
+  html.is-landscape .capture-label {
+    margin-top: 4px;
+
+    font-size: 11px;
+  }
+
+  html.is-landscape .ar-face-count {
+    top: 8px;
+    right: 8px;
+
+    min-width: 78px;
+
+    padding:
+      5px
+      8px;
+
+    font-size: 11px;
+  }
+
+  html.is-landscape .gif-timer {
+    bottom: 8px;
+
+    font-size: 11px;
+  }
+
+  html.is-landscape .result-section {
+    grid-area: result;
+
+    width: 100%;
+    max-width: 900px;
+
+    justify-self: center;
+
+    margin-top: 14px;
+    padding-top: 14px;
+  }
+
+  html.is-landscape .result-title {
+    margin-bottom: 10px;
+
+    font-size: 17px;
+  }
+
+  html.is-landscape .result-image-wrapper {
+    max-width: 720px;
+
+    margin: 0 auto;
+  }
+
+  html.is-landscape .result-buttons {
+    max-width: 720px;
+
+    margin:
+      10px
+      auto
+      0;
+  }
+
+  html.is-landscape .background-toast {
+    bottom:
+      calc(
+        12px +
+        env(safe-area-inset-bottom)
+      );
+  }
+
+  /* 가로 화면에서 공지 모달도 세로 공간에 맞춰 축소 */
+  html.is-landscape .notice-modal-backdrop {
+    padding:
+      calc(6px + env(safe-area-inset-top))
+      calc(10px + env(safe-area-inset-right))
+      calc(6px + env(safe-area-inset-bottom))
+      calc(10px + env(safe-area-inset-left));
+  }
+
+  html.is-landscape .notice-dialog {
+    width: min(92vw, 760px);
+    max-height: 96dvh;
+
+    border-radius: 16px;
+  }
+
+  html.is-landscape .notice-modal-title {
+    padding:
+      8px
+      14px
+      4px;
+
+    font-size: 15px;
+  }
+
+  html.is-landscape .notice-image-area {
+    min-height: 0;
+    max-height: 62dvh;
+
+    padding:
+      4px
+      10px;
+  }
+
+  html.is-landscape .notice-image {
+    max-height: 59dvh;
+
+    border-radius: 10px;
+  }
+
+  html.is-landscape .notice-counter {
+    min-height: 20px;
+
+    padding:
+      3px
+      10px
+      0;
+
+    font-size: 11px;
+  }
+
+  html.is-landscape .notice-modal-actions {
+    gap: 10px;
+
+    padding:
+      5px
+      14px
+      8px;
+  }
+
+  html.is-landscape .notice-nav-button,
+  html.is-landscape .notice-close-button {
+    width: 42px;
+    height: 42px;
+  }
+
+  html.is-landscape .notice-nav-button svg,
+  html.is-landscape .notice-close-button svg {
+    width: 21px;
+    height: 21px;
+  }
+
+}

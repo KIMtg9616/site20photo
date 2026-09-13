@@ -12,6 +12,9 @@
    6. PNG / GIF 저장
    7. 시스템 공유창을 통한 이미지 공유
    8. AR 얼굴 인식 인원 안내 (최대 3명)
+   9. AR 첫 사용 얼굴 맞춤 안내 토스트
+   10. 저장 / 공유 완료 피드백
+   11. 세로 ↔ 가로 화면 회전 대응
    ============================================================ */
 
 
@@ -297,6 +300,32 @@ const captureLayers = {
    AR / 선택 관리자
    ============================================================ */
 
+let arGuideFirstSessionStarted =
+  false;
+
+
+let arGuideTimerId =
+  null;
+
+
+function cancelArGuideTimer() {
+
+  if (!arGuideTimerId) {
+    return;
+  }
+
+
+  clearTimeout(
+    arGuideTimerId
+  );
+
+
+  arGuideTimerId =
+    null;
+
+}
+
+
 const arTracker =
   new ARTracker(
     videoElement,
@@ -308,23 +337,85 @@ const arTracker =
       active
     }) => {
 
-      if (!arFaceCount) {
+      if (!active) {
+
+        cancelArGuideTimer();
+
+
+        if (arFaceCount) {
+
+          arFaceCount.classList.remove(
+            "show",
+            "limit"
+          );
+
+          arFaceCount.textContent =
+            `얼굴 0/${maxFaces}명`;
+
+        }
+
+
         return;
+
       }
 
 
-      if (!active) {
+      /*
+        얼굴 맞춤 안내는 사이트를 연 뒤
+        처음 AR을 사용하는 순간에만 검사합니다.
 
-        arFaceCount.classList.remove(
-          "show",
-          "limit"
-        );
+        처음 AR 선택 직후 약 0.7초 동안 얼굴이 계속 0명이면
+        "얼굴을 카메라에 맞춰 주세요" 토스트를 한 번 표시합니다.
+        이후에는 AR을 다시 선택해도 반복하지 않습니다.
+      */
+      if (!arGuideFirstSessionStarted) {
 
-        arFaceCount.textContent =
-          `얼굴 0/${maxFaces}명`;
+        arGuideFirstSessionStarted =
+          true;
 
+
+        if (count === 0) {
+
+          arGuideTimerId =
+            window.setTimeout(
+              () => {
+
+                arGuideTimerId =
+                  null;
+
+
+                if (
+                  arTracker.lastFaceCount === 0 &&
+                  arTracker.faceCountActive
+                ) {
+
+                  backgroundManager.showToast(
+                    "얼굴을 카메라에 맞춰 주세요"
+                  );
+
+                }
+
+              },
+              700
+            );
+
+        }
+
+      }
+
+
+      if (
+        count > 0 &&
+        arGuideTimerId
+      ) {
+
+        cancelArGuideTimer();
+
+      }
+
+
+      if (!arFaceCount) {
         return;
-
       }
 
 
@@ -682,6 +773,15 @@ function updateCameraPreviewDirection() {
   videoElement.classList.toggle(
     "rear-camera",
     facingMode === "environment"
+  );
+
+
+  /*
+    전면/후면 카메라가 바뀌면 좌표 기준도 달라지므로
+    기존 AR 보간 상태를 초기화하고 다음 프레임부터 다시 맞춥니다.
+  */
+  arTracker.refreshLayout(
+    true
   );
 
 }
@@ -1195,9 +1295,10 @@ captureButton.addEventListener(
 
     try {
 
-      playFlash();
-
-
+      /*
+        촬영 플래시는 사용하지 않습니다.
+        사용자가 선택한 현재 화면을 그대로 PNG로 촬영합니다.
+      */
       const photoBlob =
         await capturePhoto(
           videoElement,
@@ -1679,6 +1780,13 @@ downloadButton.addEventListener(
       currentResultType
     );
 
+
+    backgroundManager.showToast(
+      currentResultType === "gif"
+        ? "GIF 저장을 시작했습니다."
+        : "PNG 저장을 시작했습니다."
+    );
+
   }
 );
 
@@ -1721,7 +1829,18 @@ shareButton.addEventListener(
       ) {
 
         backgroundManager.showToast(
-          "이 기기에서는 이미지 파일 대신 사이트 링크를 공유합니다."
+          "사이트 링크가 공유되었습니다."
+        );
+
+      }
+
+      else if (
+        result?.type ===
+        "file"
+      ) {
+
+        backgroundManager.showToast(
+          "촬영 결과가 공유되었습니다."
         );
 
       }
@@ -2221,7 +2340,102 @@ document.addEventListener(
 
 
 /* ============================================================
+   세로 / 가로 화면 회전 대응
+   ============================================================ */
+
+let viewportSyncTimerId =
+  null;
+
+
+function syncViewportLayout() {
+
+  const isLandscape =
+    window.innerWidth >
+    window.innerHeight;
+
+
+  document.documentElement.classList.toggle(
+    "is-landscape",
+    isLandscape
+  );
+
+
+  /*
+    CSS 레이아웃이 적용된 뒤 AR Canvas 크기를 다시 계산합니다.
+    크기가 실제로 바뀐 경우 ar.js에서 추적 좌표도 안전하게 초기화합니다.
+  */
+  window.requestAnimationFrame(
+    () => {
+
+      arTracker.refreshLayout();
+
+    }
+  );
+
+}
+
+
+function scheduleViewportLayoutSync() {
+
+  if (viewportSyncTimerId) {
+
+    clearTimeout(
+      viewportSyncTimerId
+    );
+
+  }
+
+
+  viewportSyncTimerId =
+    window.setTimeout(
+      () => {
+
+        viewportSyncTimerId =
+          null;
+
+        syncViewportLayout();
+
+      },
+      100
+    );
+
+}
+
+
+window.addEventListener(
+  "resize",
+  scheduleViewportLayoutSync,
+  {
+    passive: true
+  }
+);
+
+
+window.addEventListener(
+  "orientationchange",
+  scheduleViewportLayoutSync,
+  {
+    passive: true
+  }
+);
+
+
+if (window.visualViewport) {
+
+  window.visualViewport.addEventListener(
+    "resize",
+    scheduleViewportLayoutSync,
+    {
+      passive: true
+    }
+  );
+
+}
+
+
+/* ============================================================
    페이지 실행
    ============================================================ */
 
+syncViewportLayout();
 initialize();

@@ -873,9 +873,31 @@ function clearResult() {
    초기화
    ============================================================ */
 
-async function initialize() {
+/*
+  사이트 첫 진입에서 공지를 먼저 보여주기 위해
+  카메라 초기화 여부를 별도로 관리합니다.
 
-  updateModeUI();
+  공지가 자동으로 열리는 경우:
+  1. 공지 모달 먼저 표시
+  2. 사용자가 닫기
+  3. 카메라 권한 요청 및 카메라 실행
+
+  이렇게 하면 모바일에서 브라우저의 카메라 권한 팝업이
+  공지 모달보다 먼저 나타나는 현상을 피할 수 있습니다.
+*/
+let cameraInitializationStarted =
+  false;
+
+
+async function initializeCamera() {
+
+  if (cameraInitializationStarted) {
+    return;
+  }
+
+
+  cameraInitializationStarted =
+    true;
 
 
   if (
@@ -887,7 +909,6 @@ async function initialize() {
       "이 브라우저에서는 카메라 기능을 사용할 수 없습니다.";
 
     return;
-
   }
 
 
@@ -908,7 +929,6 @@ async function initialize() {
     );
 
     return;
-
   }
 
 
@@ -941,6 +961,49 @@ async function initialize() {
       false;
 
   }
+
+}
+
+
+async function initialize() {
+
+  updateModeUI();
+
+
+  /*
+    사이트 진입 직후 자동 공지 표시
+
+    CONFIG.noticeAutoOpen이 false가 아니고
+    현재 공개 상태인 공지가 하나 이상 있을 때 실행합니다.
+  */
+  const shouldAutoOpenNotice =
+    CONFIG.noticeAutoOpen !== false &&
+    getNotices().length > 0;
+
+
+  if (shouldAutoOpenNotice) {
+
+    /*
+      첫 번째 공개 공지부터 시작합니다.
+      현재 설정에서는 체험 안내가 항상 첫 번째입니다.
+    */
+    currentNoticeIndex =
+      0;
+
+
+    openNoticeModal();
+
+
+    /*
+      카메라는 공지를 닫은 뒤 closeNoticeModal()에서
+      자동으로 초기화됩니다.
+    */
+    return;
+
+  }
+
+
+  await initializeCamera();
 
 }
 
@@ -1876,6 +1939,27 @@ function closeNoticeModal() {
 
   if (noticeButton) {
     noticeButton.focus();
+  }
+
+
+  /*
+    사이트 첫 진입에서 자동으로 열린 공지를 닫은 뒤
+    아직 카메라 초기화를 시작하지 않았다면 카메라를 실행합니다.
+
+    이후 사용자가 공지 버튼으로 다시 모달을 열고 닫아도
+    cameraInitializationStarted가 true이므로 중복 실행되지 않습니다.
+  */
+  if (!cameraInitializationStarted) {
+
+    initializeCamera().catch(
+      error => {
+        console.error(
+          "카메라 초기화 오류:",
+          error
+        );
+      }
+    );
+
   }
 
 }

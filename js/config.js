@@ -63,6 +63,16 @@ export const CONFIG = {
   },
 
   /*
+   사이트에 처음 들어왔을 때 공지 모달 자동 표시
+
+   true  = 사이트 진입 즉시 공지 표시
+   false = 공지 버튼을 눌렀을 때만 표시
+
+   체험 안내는 항상 공개되므로 기본값은 true입니다.
+  */
+  noticeAutoOpen: true,
+
+  /*
    공지 이미지 목록
 
    guide  : 항상 공개

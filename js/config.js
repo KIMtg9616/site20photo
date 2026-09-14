@@ -37,6 +37,27 @@ export const CONFIG = {
   },
 
   /*
+   사진 방명록 연동 설정
+
+   1) Google Apps Script를 웹 앱으로 배포합니다.
+   2) webAppUrl에 배포 URL(/exec)을 입력합니다.
+   3) setupProject() 실행 결과의 writeKey를 eventKey에 입력합니다.
+
+   일반 촬영은 서버에 저장되지 않습니다.
+   사용자가 결과 화면에서 '방명록에 올리기'를 직접 선택한 경우에만
+   Google Drive + Google Sheets에 등록됩니다.
+  */
+  guestbook: {
+    enabled: true,
+    webAppUrl: "PASTE_APPS_SCRIPT_WEB_APP_URL_HERE",
+    eventKey: "PASTE_WRITE_KEY_HERE",
+    maxUploadBytes: 6 * 1024 * 1024,
+    maxMessageLength: 60,
+    statusPollIntervalMs: 700,
+    statusTimeoutMs: 25000
+  },
+
+  /*
    캐릭터와 움직이는 캐릭터에서만
    카메라 좌측 상단에 표시되는 타이틀 이미지입니다.
   */

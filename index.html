@@ -454,6 +454,20 @@
 
       </div>
 
+      <button
+        id="guestbookButton"
+        class="guestbook-button"
+        type="button"
+        aria-label="촬영 결과를 사진 방명록에 올리기"
+      >
+        <span class="guestbook-button-icon" aria-hidden="true">📌</span>
+        <span>방명록에 올리기</span>
+      </button>
+
+      <p class="guestbook-result-note">
+        방명록에 올리기를 선택한 사진만 Google Drive에 저장되고 공개됩니다.
+      </p>
+
     </section>
 
 
@@ -573,6 +587,97 @@
 
     </div>
 
+  </div>
+
+
+  <!-- =========================================================
+       사진 방명록 등록 확인 모달
+       ========================================================= -->
+  <div
+    id="guestbookModal"
+    class="guestbook-modal"
+    aria-hidden="true"
+  >
+    <div
+      id="guestbookModalBackdrop"
+      class="guestbook-modal-backdrop"
+    >
+      <section
+        class="guestbook-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="guestbookModalTitle"
+      >
+        <h2
+          id="guestbookModalTitle"
+          class="guestbook-modal-title"
+        >
+          방명록에 올리기
+        </h2>
+
+        <div class="guestbook-preview-wrap">
+          <img
+            id="guestbookPreview"
+            class="guestbook-preview"
+            alt="방명록에 등록할 촬영 결과"
+          >
+        </div>
+
+        <p class="guestbook-privacy-text">
+          일반 촬영 결과는 서버에 저장되지 않습니다.
+          아래의 <strong>올리기</strong>를 선택한 사진만 행사 방명록용 Google Drive에 저장되고 공개됩니다.
+        </p>
+
+        <label
+          class="guestbook-message-label"
+          for="guestbookMessage"
+        >
+          한마디 남기기 <span>(선택)</span>
+        </label>
+
+        <textarea
+          id="guestbookMessage"
+          class="guestbook-message"
+          rows="3"
+          maxlength="60"
+          placeholder="예: 과학 체험 재미있었어요!"
+        ></textarea>
+
+        <div
+          id="guestbookMessageCounter"
+          class="guestbook-message-counter"
+        >
+          0 / 60
+        </div>
+
+        <label class="guestbook-consent">
+          <input
+            id="guestbookConsent"
+            type="checkbox"
+          >
+          <span>이 사진이 행사 방명록에 공개되는 것에 동의합니다.</span>
+        </label>
+
+        <div class="guestbook-modal-actions">
+          <button
+            id="guestbookCancelButton"
+            class="guestbook-cancel-button"
+            type="button"
+          >
+            취소
+          </button>
+
+          <button
+            id="guestbookUploadButton"
+            class="guestbook-upload-button"
+            type="button"
+            disabled
+          >
+            올리기
+          </button>
+        </div>
+      </section>
+    </div>
   </div>
 
 

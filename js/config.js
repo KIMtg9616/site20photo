@@ -49,8 +49,8 @@ export const CONFIG = {
   */
   guestbook: {
     enabled: true,
-    webAppUrl: "PASTE_APPS_SCRIPT_WEB_APP_URL_HERE",
-    eventKey: "PASTE_WRITE_KEY_HERE",
+    webAppUrl: "https://script.google.com/macros/s/AKfycbxJARhWep9Ra5xas5uPu8yZo5HFkN8zDD_A-ypYtSg_EFvTw9ctWkxTOr5NMZL_ltJT/exec",
+    eventKey: "2a5fc907199147fd8029206860b2b4c128ed50524a0b4018",
     maxUploadBytes: 6 * 1024 * 1024,
     maxMessageLength: 60,
     statusPollIntervalMs: 700,
